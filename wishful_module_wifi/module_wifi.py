@@ -152,7 +152,7 @@ class WifiModule(wishful_module.AgentUpiModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e)
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
         return True
 
@@ -171,7 +171,7 @@ class WifiModule(wishful_module.AgentUpiModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e)
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
         return True
 

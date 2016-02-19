@@ -1,8 +1,7 @@
 import logging
 import random
-import wishful_module
 import wishful_upis as upis
-
+import wishful_agent as wishful_module
 
 __author__ = "Piotr Gawlowicz, Mikolaj Chwalisz"
 __copyright__ = "Copyright (c) 2015, Technische Universität Berlin"
@@ -11,7 +10,7 @@ __email__ = "{gawlowicz, chwalisz}@tkn.tu-berlin.de"
 
 
 @wishful_module.build_module
-class WifiModule(wishful_module.WishfulModule):
+class WifiModule(wishful_module.AgentUpiModule):
     def __init__(self, agentPort=None):
         super(WifiModule, self).__init__(agentPort)
         self.log = logging.getLogger('wifi_module.main')

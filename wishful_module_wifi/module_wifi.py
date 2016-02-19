@@ -3,12 +3,13 @@ import random
 import wishful_upis as upis
 import wishful_agent as wishful_module
 import subprocess
+from wishful_framework.classes import exceptions
+import inspect
 
-__author__ = "Piotr Gawlowicz, Mikolaj Chwalisz"
+__author__ = "Piotr Gawlowicz, Mikolaj Chwalisz, Zubow"
 __copyright__ = "Copyright (c) 2015, Technische Universität Berlin"
 __version__ = "0.1.0"
-__email__ = "{gawlowicz, chwalisz}@tkn.tu-berlin.de"
-
+__email__ = "{gawlowicz, chwalisz, zubow}@tkn.tu-berlin.de"
 
 @wishful_module.build_module
 class WifiModule(wishful_module.AgentUpiModule):
@@ -47,6 +48,11 @@ class WifiModule(wishful_module.AgentUpiModule):
 
     @wishful_module.bind_function(upis.net.get_info_of_associated_STAs)
     def get_info_of_associated_STAs(self):
+        '''
+            Returns information about associated STAs for a node running in AP mode
+            tbd: use Netlink API
+        '''
+
         self.log.debug("WIFI Module get info on associated clients on interface: {}".format(self.interface))
 
         try:
@@ -80,17 +86,14 @@ class WifiModule(wishful_module.AgentUpiModule):
                     res[mac_addr][key] = (val2, unit)
             return res
         except Exception as e:
-            self.log.fatal("An error occurred in get_info_of_associated_STAs: %s" % e)
-            raise Exception("An error occurred in get_info_of_associated_STAs: %s" % e)
+            fname = inspect.currentframe().f_code.co_name
+            self.log.fatal("An error occurred in %s: %s" % (fname, e))
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    """
-        Returns information about associated STAs for a node running in AP mode
-        tbd: use Netlink API
-    """
     @wishful_module.bind_function(upis.net.get_inactivity_time_of_associated_STAs)
     def get_inactivity_time_of_associated_STAs(self):
 
-        self.log.info('Dot80211 Linux: getInactivityTimeOfAssociatedSTAs')
+        self.log.debug("WIFI Module get inactivity time of associated clients on interface: {}".format(self.interface))
 
         try:
             res = self.get_info_of_associated_STAs()
@@ -105,8 +108,9 @@ class WifiModule(wishful_module.AgentUpiModule):
             # dict of mac_addr -> inactivity_time
             return rv
         except Exception as e:
-            self.log.fatal("An error occurred in get_inactivity_time_of_associated_STAs: %s" % e)
-            raise Exception("An error occurred in get_inactivity_time_of_associated_STAs: %s" % e)
+            fname = inspect.currentframe().f_code.co_name
+            self.log.fatal("An error occurred in %s: %s" % (fname, e))
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     def run_command(self, command):
         '''

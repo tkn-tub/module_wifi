@@ -2,6 +2,7 @@ import logging
 import random
 import wishful_upis as upis
 import wishful_agent as wishful_module
+import subprocess
 
 __author__ = "Piotr Gawlowicz, Mikolaj Chwalisz"
 __copyright__ = "Copyright (c) 2015, Technische Universität Berlin"
@@ -43,3 +44,87 @@ class WifiModule(wishful_module.AgentUpiModule):
     def get_power(self):
         self.log.debug("WIFI Module gets power on interface: {}".format(self.interface))
         return self.power
+
+    @wishful_module.bind_function(upis.net.get_info_of_associated_STAs)
+    def get_info_of_associated_STAs(self):
+        self.log.debug("WIFI Module get info on associated clients on interface: {}".format(self.interface))
+
+        try:
+            [rcode, sout, serr] = self.run_command('iw dev ' + self.interface + ' station dump')
+
+            # mac_addr -> stat_key -> list of (value, unit)
+            res = {}
+            sout_arr = sout.split("\n")
+
+            for line in sout_arr:
+                s = line.strip()
+                if s == '':
+                    continue
+                if "Station" in s:
+                    arr = s.split()
+                    mac_addr = arr[1].strip()
+                    res[mac_addr] = {}
+                else:
+                    arr = s.split(":")
+                    key = arr[0].strip()
+                    val = arr[1].strip()
+
+                    arr2 = val.split()
+                    val2 = arr2[0].strip()
+
+                    if len(arr2) > 1:
+                        unit = arr2[1].strip()
+                    else:
+                        unit = None
+
+                    res[mac_addr][key] = (val2, unit)
+            return res
+        except Exception as e:
+            self.log.fatal("An error occurred in get_info_of_associated_STAs: %s" % e)
+            raise Exception("An error occurred in get_info_of_associated_STAs: %s" % e)
+
+    """
+        Returns information about associated STAs for a node running in AP mode
+        tbd: use Netlink API
+    """
+    @wishful_module.bind_function(upis.net.get_inactivity_time_of_associated_STAs)
+    def get_inactivity_time_of_associated_STAs(self):
+
+        self.log.info('Dot80211 Linux: getInactivityTimeOfAssociatedSTAs')
+
+        try:
+            res = self.get_info_of_associated_STAs()
+
+            rv = {}
+            for mac_addr in res:
+                inactive_time = res[mac_addr]['inactive time']
+                self.log.info('%s -> %s' % (mac_addr, inactive_time))
+
+                rv[mac_addr] = inactive_time
+
+            # dict of mac_addr -> inactivity_time
+            return rv
+        except Exception as e:
+            self.log.fatal("An error occurred in get_inactivity_time_of_associated_STAs: %s" % e)
+            raise Exception("An error occurred in get_inactivity_time_of_associated_STAs: %s" % e)
+
+    def run_command(self, command):
+        '''
+            Method to start the shell commands and get the output as iterater object
+        '''
+
+        sp = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
+        out, err = sp.communicate()
+
+        if False:
+            if out:
+                self.log.debug("standard output of subprocess:")
+                self.log.debug(out)
+            if err:
+                self.log.debug("standard error of subprocess:")
+                self.log.debug(err)
+
+        if err:
+            raise Exception("An error occurred in Dot80211Linux: %s" % err)
+
+        return [sp.returncode, out, err]

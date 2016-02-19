@@ -117,12 +117,11 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.get_avg_sigPower_of_associated_STAs)
-    def get_avg_sigPower_of_associated_STAs(self, myargs):
-        iface = myargs["iface"]
+    @wishful_module.bind_function(upis.net.get_avg_sigpower_of_associated_STAs)
+    def get_avg_sigpower_of_associated_STAs(self):
 
         try:
-            res = self.get_info_of_associated_STAs(myargs)
+            res = self.get_info_of_associated_STAs()
 
             rv = {}
             for mac_addr in res:
@@ -138,10 +137,7 @@ class WifiModule(wishful_module.AgentUpiModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.radio.set_rf_channel)
-    def set_rf_channel(self, myargs):
-
-        iface = myargs["iface"]
-        channel = myargs["channel"]
+    def set_rf_channel(self, iface, channel):
 
         self.log.info('setting channel(): %s->%s' % (str(iface), str(channel)))
 
@@ -157,10 +153,7 @@ class WifiModule(wishful_module.AgentUpiModule):
         return True
 
     @wishful_module.bind_function(upis.net.connect_to_AP)
-    def connect_to_AP(self, myargs):
-
-        iface = myargs["iface"]
-        ssid = myargs["ssid"]
+    def connect_to_AP(self, iface, ssid):
 
         self.log.info('connecting via to AP with SSID: %s->%s' % (str(iface), str(ssid)))
 
@@ -176,33 +169,23 @@ class WifiModule(wishful_module.AgentUpiModule):
         return True
 
     @wishful_module.bind_function(upis.net.get_hw_addr)
-    def get_hw_addr(self, myargs):
+    def get_hw_addr(self, iface):
 
         self.log.info('getHwAddr() called')
 
-        iface = myargs["iface"]
         s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         info = fcntl.ioctl(s.fileno(), 0x8927,  struct.pack('256s', iface[:15]))
         return ':'.join(['%02x' % ord(char) for char in info[18:24]])
 
     @wishful_module.bind_function(upis.net.get_iface_ip_addr)
-    def get_iface_ip_addr(self, myargs):
+    def get_iface_ip_addr(self, iface):
 
-        iface = myargs["iface"]
         ip = ni.ifaddresses(iface)[2][0]['addr']
         return ip
 
     @wishful_module.bind_function(upis.net.gen_backlogged_80211_l2_bcast_traffic)
-    def gen_backlogged_80211_l2_bcast_traffic(self, myargs):
+    def gen_backlogged_80211_l2_bcast_traffic(self, iface, num_packets, ipPayloadSize, phyBroadcastMbps, ipdst, ipsrc, use_tcpreplay):
         self.log.info('genBacklogged80211L2BcastTraffic()')
-
-        iface = myargs["iface"]
-        num_packets = myargs["num_packets"]
-        ipPayloadSize = myargs["ipPayloadSize"]
-        phyBroadcastMbps = myargs["phyBroadcastMbps"]
-        ipdst = myargs["ipdst"]
-        ipsrc = myargs["ipsrc"]
-        use_tcpreplay = myargs["use_tcpreplay"]
 
         # get my MAC HW address
         myMacAddr = self.getHwAddr({'iface': iface})
@@ -230,13 +213,7 @@ class WifiModule(wishful_module.AgentUpiModule):
         return tx_frame_rate
 
     @wishful_module.bind_function(upis.net.gen_80211_l2_link_probing)
-    def gen_80211_l2_link_probing(self, myargs):
-
-        iface = myargs["iface"]
-        num_packets = myargs["num_packets"]
-        pinter = myargs["pinter"]
-        ipdst = myargs["ipdst"]
-        ipsrc = myargs["ipsrc"]
+    def gen_80211_l2_link_probing(self, iface, num_packets, pinter, ipdst, ipsrc):
 
         self.log.info('gen80211L2LinkProbing()')
         # get my MAC HW address
@@ -250,12 +227,7 @@ class WifiModule(wishful_module.AgentUpiModule):
         sendp(data, iface=iface, inter=pinter)
 
     @wishful_module.bind_function(upis.net.sniff_80211_l2_link_probing)
-    def sniff_80211_l2_link_probing(self, myargs):
-
-        iface = myargs["iface"]
-        ipdst = myargs["ipdst"]
-        ipsrc = myargs["ipsrc"]
-        sniff_timeout = myargs["sniff_timeout"]
+    def sniff_80211_l2_link_probing(self, iface, ipdst, ipsrc, sniff_timeout):
 
         self.log.info('sniff80211L2LinkProbing()')
         rx_pkts = {}
@@ -274,15 +246,11 @@ class WifiModule(wishful_module.AgentUpiModule):
 
 
     @wishful_module.bind_function(upis.net.set_ARP_entry)
-    def set_ARP_entry(self, myargs):
+    def set_ARP_entry(self, iface, mac_addr, ip_addr):
         """
             Manipulates the local ARP cache.
             tbd: use Netlink API
         """
-        iface = myargs["iface"]
-        mac_addr = myargs["mac_addr"]
-        ip_addr = myargs["ip_addr"]
-
         try:
             [rcode, sout, serr] = self.run_command('sudo arp -s ' + ip_addr + ' -i '+ iface + ' ' + mac_addr)
             return sout
@@ -292,13 +260,11 @@ class WifiModule(wishful_module.AgentUpiModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.net.transmit_disassociation_request_to_STA)
-    def transmit_disassociation_request_to_STA(self, myargs):
+    def transmit_disassociation_request_to_STA(self, iface, sta_mac_addr):
         """
             Send a disaccociation request frame to a client STA associated with this AP.
             tbd: what is -p ?? Please simplify
         """
-        iface = myargs["iface"]
-        sta_mac_addr = myargs["sta_mac_addr"]
 
         exec_file = str(os.path.join(self.getPlatformPathHandover())) + '/hostapd_cli'
         args = '-p /tmp/hostapd-' + iface + ' disassociate'
@@ -316,13 +282,11 @@ class WifiModule(wishful_module.AgentUpiModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.net.remove_STA_from_AP_blacklist)
-    def remove_STA_from_AP_blacklist(self, myargs):
+    def remove_STA_from_AP_blacklist(self, iface, sta_mac_addr):
         """
             Unblacklist a given STA in the AP, i.e. the STA is able to associate with this AP afterwards.
             tbd: what is -p ?? Please simplify
         """
-        iface = myargs["iface"]
-        sta_mac_addr = myargs["sta_mac_addr"]
 
         exec_file = str(os.path.join(self.getPlatformPathHandover())) + '/hostapd_cli'
         args = '-p /tmp/hostapd-' + iface + ' unblacklist_sta'
@@ -340,13 +304,11 @@ class WifiModule(wishful_module.AgentUpiModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.net.add_STA_to_AP_blacklist)
-    def add_STA_to_AP_blacklist(self, myargs):
+    def add_STA_to_AP_blacklist(self, iface, sta_mac_addr):
         """
             Blacklist a given STA in the AP, i.e. any request for association by the STA will be ignored by the AP.
             tbd: what is -p ?? Please simplify
         """
-        iface = myargs["iface"]
-        sta_mac_addr = myargs["sta_mac_addr"]
 
         exec_file = str(os.path.join(self.getPlatformPathHandover())) + '/hostapd_cli'
         args = '-p /tmp/hostapd-' + iface + ' blacklist_sta'
@@ -364,13 +326,11 @@ class WifiModule(wishful_module.AgentUpiModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.net.register_new_STA_in_AP)
-    def register_new_STA_in_AP(self, myargs):
+    def register_new_STA_in_AP(self, iface, sta_mac_addr):
         """
             Register a new STA within the AP, i.e. afterwards the STA is able to exchange data frames.
             tbd: consider client capabilities
         """
-        iface = myargs["iface"]
-        sta_mac_addr = myargs["sta_mac_addr"]
 
         self.log.debug('Add new STA %s on iface %s' % (sta_mac_addr, iface))
 
@@ -387,15 +347,10 @@ class WifiModule(wishful_module.AgentUpiModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.net.send_CSA_beacon_to_STA)
-    def send_CSA_beacon_to_STA(self, myargs):
+    def send_CSA_beacon_to_STA(self, iface, bssid, sta_mac_addr, target_channel, serving_channel):
         """
             Transmit Channel Switch Announcement (CSA) beacon to the given STA.
         """
-        iface = myargs["iface"]
-        bssid = myargs["bssid"]
-        sta_mac_addr = myargs["sta_mac_addr"]
-        target_channel = myargs["target_channel"]
-        serving_channel = myargs["serving_channel"]
 
         self.log.debug('Sending CSA to %s on iface %s with BSSID %s switch STA to channel %s' % (sta_mac_addr, iface, bssid, str(target_channel)))
 
@@ -413,14 +368,10 @@ class WifiModule(wishful_module.AgentUpiModule):
         return True
 
     @wishful_module.bind_function(upis.net.change_routing)
-    def change_routing(self, myargs):
+    def change_routing(self, servingAP_ip_addr, targetAP_ip_addr, sta_ip_addr):
         """
             Manipulates the Linux Routing table.
         """
-
-        servingAP_ip_addr = myargs["servingAP_ip_addr"]
-        targetAP_ip_addr = myargs["targetAP_ip_addr"]
-        sta_ip_addr = myargs["sta_ip_addr"]
 
         # IPDB has a simple yet useful routing management interface.
         # To add a route, one can use almost any syntax::

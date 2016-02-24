@@ -136,8 +136,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.radio.set_rf_channel)
-    def set_rf_channel(self, iface, channel):
+    @wishful_module.bind_function(upis.radio.set_channel)
+    def set_channel(self, iface, channel):
 
         self.log.info('setting channel(): %s->%s' % (str(iface), str(channel)))
 

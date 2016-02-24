@@ -51,8 +51,8 @@ class WifiModule(wishful_module.AgentUpiModule):
         self.log.debug("WIFI Module gets power on interface: {}".format(self.interface))
         return self.power
 
-    @wishful_module.bind_function(upis.net.get_info_of_associated_STAs)
-    def get_info_of_associated_STAs(self):
+    @wishful_module.bind_function(upis.net.get_info_of_connected_devices)
+    def get_info_of_connected_devices(self):
         '''
             Returns information about associated STAs for a node running in AP mode
             tbd: use Netlink API
@@ -95,8 +95,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.get_inactivity_time_of_associated_STAs)
-    def get_inactivity_time_of_associated_STAs(self):
+    @wishful_module.bind_function(upis.net.get_inactivity_time_of_connected_devices)
+    def get_inactivity_time_of_connected_devices(self):
 
         self.log.debug("WIFI Module get inactivity time of associated clients on interface: {}".format(self.interface))
 
@@ -117,8 +117,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.get_avg_sigpower_of_associated_STAs)
-    def get_avg_sigpower_of_associated_STAs(self):
+    @wishful_module.bind_function(upis.net.get_avg_sigpower_of_connected_devices)
+    def get_avg_sigpower_of_connected_devices(self):
 
         try:
             res = self.get_info_of_associated_STAs()
@@ -152,9 +152,10 @@ class WifiModule(wishful_module.AgentUpiModule):
 
         return True
 
-    @wishful_module.bind_function(upis.net.connect_to_AP)
-    def connect_to_AP(self, iface, ssid):
+    @wishful_module.bind_function(upis.net.connect_to_network)
+    def connect_to_network(self, iface, **kwargs):
 
+        ssid = kwargs.get('ssid')
         self.log.info('connecting via to AP with SSID: %s->%s' % (str(iface), str(ssid)))
 
         cmd_str = 'sudo iwconfig ' + iface + ' essid ' + str(ssid)
@@ -168,8 +169,8 @@ class WifiModule(wishful_module.AgentUpiModule):
 
         return True
 
-    @wishful_module.bind_function(upis.net.get_hw_addr)
-    def get_hw_addr(self, iface):
+    @wishful_module.bind_function(upis.net.get_iface_hw_addr)
+    def get_iface_hw_addr(self, iface):
 
         self.log.info('getHwAddr() called')
 
@@ -183,9 +184,14 @@ class WifiModule(wishful_module.AgentUpiModule):
         ip = ni.ifaddresses(iface)[2][0]['addr']
         return ip
 
-    @wishful_module.bind_function(upis.net.gen_backlogged_80211_l2_bcast_traffic)
-    def gen_backlogged_80211_l2_bcast_traffic(self, iface, num_packets, ipPayloadSize, phyBroadcastMbps, ipdst, ipsrc, use_tcpreplay):
-        self.log.info('genBacklogged80211L2BcastTraffic()')
+    @wishful_module.bind_function(upis.net.gen_backlogged_layer2_traffic)
+    def gen_backlogged_layer2_traffic(self, iface, num_packets, ipPayloadSize, phyBroadcastMbps, **kwargs):
+
+        self.log.info('gen_backlogged_layer2_traffic ... for 802.11()')
+
+        ipdst = kwargs.get('ipdst')
+        ipsrc = kwargs.get('ipdst')
+        use_tcpreplay = kwargs.get('use_tcpreplay')
 
         # get my MAC HW address
         myMacAddr = self.getHwAddr({'iface': iface})
@@ -212,10 +218,13 @@ class WifiModule(wishful_module.AgentUpiModule):
 
         return tx_frame_rate
 
-    @wishful_module.bind_function(upis.net.gen_80211_l2_link_probing)
-    def gen_80211_l2_link_probing(self, iface, num_packets, pinter, ipdst, ipsrc):
+    @wishful_module.bind_function(upis.net.gen_layer2_traffic)
+    def gen_layer2_traffic(self, iface, num_packets, pinter, **kwargs):
 
-        self.log.info('gen80211L2LinkProbing()')
+        self.log.info('gen_layer2_traffic ... here 802.11()')
+
+        ipdst = kwargs.get('ipdst')
+        ipsrc = kwargs.get('ipsrc')
         # get my MAC HW address
         myMacAddr = self.getHwAddr({'iface': iface})
         dstMacAddr = 'ff:ff:ff:ff:ff:ff'
@@ -226,10 +235,15 @@ class WifiModule(wishful_module.AgentUpiModule):
         data = RadioTap() / Dot11(type=2, subtype=0, addr1=dstMacAddr, addr2=myMacAddr, addr3=myMacAddr) / LLC() / SNAP() / IP(dst=ipdst, src=ipsrc, ttl=(1,num_packets))
         sendp(data, iface=iface, inter=pinter)
 
-    @wishful_module.bind_function(upis.net.sniff_80211_l2_link_probing)
-    def sniff_80211_l2_link_probing(self, iface, ipdst, ipsrc, sniff_timeout):
+    @wishful_module.bind_function(upis.net.sniff_layer2_traffic)
+    def sniff_layer2_traffic(self, iface, sniff_timeout, **kwargs):
 
-        self.log.info('sniff80211L2LinkProbing()')
+        self.log.info('sniff layer 2 traffic ... here 802.11')
+
+        # some additional filtering ...todo!!!!!!!
+        ipdst = kwargs.get('ipdst')
+        ipsrc = kwargs.get('ipsrc')
+
         rx_pkts = {}
         rx_pkts['res'] = 0
 
@@ -259,8 +273,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.transmit_disassociation_request_to_STA)
-    def transmit_disassociation_request_to_STA(self, iface, sta_mac_addr):
+    @wishful_module.bind_function(upis.net.disconnect_device)
+    def disconnect_device(self, iface, sta_mac_addr):
         """
             Send a disaccociation request frame to a client STA associated with this AP.
             tbd: what is -p ?? Please simplify
@@ -281,8 +295,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.remove_STA_from_AP_blacklist)
-    def remove_STA_from_AP_blacklist(self, iface, sta_mac_addr):
+    @wishful_module.bind_function(upis.net.remove_device_from_blacklist)
+    def remove_device_from_blacklist(self, iface, sta_mac_addr):
         """
             Unblacklist a given STA in the AP, i.e. the STA is able to associate with this AP afterwards.
             tbd: what is -p ?? Please simplify
@@ -303,8 +317,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.add_STA_to_AP_blacklist)
-    def add_STA_to_AP_blacklist(self, iface, sta_mac_addr):
+    @wishful_module.bind_function(upis.net.add_device_to_blacklist)
+    def add_device_to_blacklist(self, iface, sta_mac_addr):
         """
             Blacklist a given STA in the AP, i.e. any request for association by the STA will be ignored by the AP.
             tbd: what is -p ?? Please simplify
@@ -325,8 +339,8 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.register_new_STA_in_AP)
-    def register_new_STA_in_AP(self, iface, sta_mac_addr):
+    @wishful_module.bind_function(upis.net.register_new_device)
+    def register_new_device(self, iface, sta_mac_addr):
         """
             Register a new STA within the AP, i.e. afterwards the STA is able to exchange data frames.
             tbd: consider client capabilities
@@ -346,12 +360,13 @@ class WifiModule(wishful_module.AgentUpiModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.send_CSA_beacon_to_STA)
-    def send_CSA_beacon_to_STA(self, iface, bssid, sta_mac_addr, target_channel, serving_channel):
+    @wishful_module.bind_function(upis.net.trigger_channel_switch_in_device)
+    def trigger_channel_switch_in_device(self, iface, sta_mac_addr, target_channel, serving_channel, **kwargs):
         """
             Transmit Channel Switch Announcement (CSA) beacon to the given STA.
         """
 
+        bssid = kwargs.get('bssid')
         self.log.debug('Sending CSA to %s on iface %s with BSSID %s switch STA to channel %s' % (sta_mac_addr, iface, bssid, str(target_channel)))
 
         # tbd: clean up this mess

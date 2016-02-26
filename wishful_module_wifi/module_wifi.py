@@ -184,56 +184,56 @@ class WifiModule(wishful_module.AgentUpiModule):
         ip = ni.ifaddresses(iface)[2][0]['addr']
         return ip
 
-    @wishful_module.bind_function(upis.net.gen_backlogged_layer2_traffic)
-    def gen_backlogged_layer2_traffic(self, iface, num_packets, ipPayloadSize, phyBroadcastMbps, **kwargs):
-
-        self.log.info('gen_backlogged_layer2_traffic ... for 802.11()')
-
-        ipdst = kwargs.get('ipdst')
-        ipsrc = kwargs.get('ipdst')
-        use_tcpreplay = kwargs.get('use_tcpreplay')
-
-        # get my MAC HW address
-        myMacAddr = self.getHwAddr({'iface': iface})
-
-        # craft packet to be transmitted
-        payload = 'Z' * ipPayloadSize
-        data = RadioTap() / Dot11(type=2, subtype=0, addr1="ff:ff:ff:ff:ff:ff", addr2=myMacAddr, addr3=myMacAddr) \
-               / LLC() / SNAP() / IP(dst=ipdst, src=ipsrc) / payload
-
-        # send 10 packets backlogged
-        now = datetime.now()
-        if use_tcpreplay:
-            # use tcprelay
-            sendpfast(data, iface=iface, mbps=phyBroadcastMbps, loop=num_packets, file_cache=True)
-        else:
-            piter = (len(data) * 8) / (phyBroadcastMbps * 1e6)
-            sendp(data, iface=iface, loop=1, inter=piter, realtime=True, count=num_packets, verbose=0)
-
-        delta = datetime.now()-now
-        # calc achieved transmit data rate
-        tx_frame_rate = 1.0 / ((delta.seconds + delta.microseconds / 1000000.0) / num_packets)
-
-        self.log.info('gen80211L2LinkProbing(): tx_frame_rate=%d' % int(tx_frame_rate))
-
-        return tx_frame_rate
 
     @wishful_module.bind_function(upis.net.gen_layer2_traffic)
-    def gen_layer2_traffic(self, iface, num_packets, pinter, **kwargs):
+    def gen_layer2_traffic(self, iface, num_packets, pinter, max_phy_broadcast_rate_mbps, **kwargs):
 
         self.log.info('gen_layer2_traffic ... here 802.11()')
 
         ipdst = kwargs.get('ipdst')
         ipsrc = kwargs.get('ipsrc')
+
         # get my MAC HW address
         myMacAddr = self.getHwAddr({'iface': iface})
         dstMacAddr = 'ff:ff:ff:ff:ff:ff'
 
-        if num_packets > 255:
-            num_packets = 255
+        if pinter is not None:
+            # generate with some packet interval
+            if num_packets > 255:
+                num_packets = 255
 
-        data = RadioTap() / Dot11(type=2, subtype=0, addr1=dstMacAddr, addr2=myMacAddr, addr3=myMacAddr) / LLC() / SNAP() / IP(dst=ipdst, src=ipsrc, ttl=(1,num_packets))
-        sendp(data, iface=iface, inter=pinter)
+            data = RadioTap() / Dot11(type=2, subtype=0, addr1=dstMacAddr, addr2=myMacAddr, addr3=myMacAddr) / LLC() / SNAP() / IP(dst=ipdst, src=ipsrc, ttl=(1,num_packets))
+            sendp(data, iface=iface, inter=pinter)
+
+            return 1.0 / pinter
+        else:
+            assert max_phy_broadcast_rate_mbps is not None
+
+            use_tcpreplay = kwargs.get('use_tcpreplay')
+
+            # craft packet to be transmitted
+            payload = 'Z' * ipPayloadSize
+            data = RadioTap() / Dot11(type=2, subtype=0, addr1=dstMacAddr, addr2=myMacAddr, addr3=myMacAddr) \
+                   / LLC() / SNAP() / IP(dst=ipdst, src=ipsrc) / payload
+
+            # send 10 packets backlogged
+            now = datetime.now()
+            if use_tcpreplay:
+                # use tcprelay
+                sendpfast(data, iface=iface, mbps=phyBroadcastMbps, loop=num_packets, file_cache=True)
+            else:
+                piter = (len(data) * 8) / (phyBroadcastMbps * 1e6)
+                sendp(data, iface=iface, loop=1, inter=piter, realtime=True, count=num_packets, verbose=0)
+
+            delta = datetime.now()-now
+            # calc achieved transmit data rate
+            tx_frame_rate = 1.0 / ((delta.seconds + delta.microseconds / 1000000.0) / num_packets)
+
+            self.log.info('gen80211L2LinkProbing(): tx_frame_rate=%d' % int(tx_frame_rate))
+
+            return tx_frame_rate
+
+
 
     @wishful_module.bind_function(upis.net.sniff_layer2_traffic)
     def sniff_layer2_traffic(self, iface, sniff_timeout, **kwargs):

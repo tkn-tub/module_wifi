@@ -17,9 +17,9 @@ __version__ = "0.1.0"
 __email__ = "{gawlowicz, chwalisz, zubow}@tkn.tu-berlin.de"
 
 @wishful_module.build_module
-class WifiModule(wishful_module.AgentUpiModule):
-    def __init__(self, agentPort=None):
-        super(WifiModule, self).__init__(agentPort)
+class WifiModule(wishful_module.AgentModule):
+    def __init__(self):
+        super(WifiModule, self).__init__()
         self.log = logging.getLogger('wifi_module.main')
         self.interface = "wlan0"
         self.channel = 1

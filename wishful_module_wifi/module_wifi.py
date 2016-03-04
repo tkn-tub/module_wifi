@@ -171,6 +171,9 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.net.get_iface_hw_addr)
     def get_iface_hw_addr(self, iface):
+        '''
+        @todo: move to common network module; it is not wifi specific
+        '''
 
         self.log.info('getHwAddr() called')
 
@@ -180,6 +183,9 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.net.get_iface_ip_addr)
     def get_iface_ip_addr(self, iface):
+        '''
+        @todo: move to common network module; it is not wifi specific
+        '''
 
         ip = ni.ifaddresses(iface)[2][0]['addr']
         return ip

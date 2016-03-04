@@ -259,6 +259,17 @@ class WifiModule(wishful_module.AgentModule):
         return numRxPkts
 
 
+    @wishful_module.bind_function(upis.radio.inject_frame)
+    def inject_frame(self, iface, frame, is_layer_2_packet, tx_count=1, pkt_interval=1):
+        self.log.debug("Inject frame".format())
+
+        if is_layer_2_packet:
+            sendp(frame, iface=iface, inter=pkt_interval, realtime=True, count=tx_count, verbose=0)
+        else:
+            send(frame, iface=iface, inter=pkt_interval, realtime=True, count=tx_count, verbose=0)
+
+        return True
+
     @wishful_module.bind_function(upis.net.set_ARP_entry)
     def set_ARP_entry(self, iface, mac_addr, ip_addr):
         """

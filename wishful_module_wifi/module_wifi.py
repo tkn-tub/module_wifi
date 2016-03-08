@@ -58,7 +58,7 @@ class WifiModule(wishful_module.AgentModule):
             tbd: use Netlink API
         '''
 
-        self.log.debug("WIFI Module get info on associated clients on interface: {}".format(self.interface))
+        self.log.info("WIFI Module get info on associated clients on interface: {}".format(self.interface))
 
         try:
             [rcode, sout, serr] = self.run_command('iw dev ' + self.interface + ' station dump')
@@ -101,7 +101,7 @@ class WifiModule(wishful_module.AgentModule):
         self.log.debug("WIFI Module get inactivity time of associated clients on interface: {}".format(self.interface))
 
         try:
-            res = self.get_info_of_associated_STAs()
+            res = self.get_info_of_connected_devices()
 
             rv = {}
             for mac_addr in res:
@@ -121,7 +121,7 @@ class WifiModule(wishful_module.AgentModule):
     def get_avg_sigpower_of_connected_devices(self):
 
         try:
-            res = self.get_info_of_associated_STAs()
+            res = self.get_info_of_connected_devices()
 
             rv = {}
             for mac_addr in res:

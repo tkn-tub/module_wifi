@@ -15,7 +15,7 @@ __author__ = "Piotr Gawlowicz, Mikolaj Chwalisz, Zubow"
 __copyright__ = "Copyright (c) 2015, Technische Universität Berlin"
 __version__ = "0.1.0"
 __email__ = "{gawlowicz, chwalisz, zubow}@tkn.tu-berlin.de"
-
+l
 @wishful_module.build_module
 class WifiModule(wishful_module.AgentModule):
     def __init__(self):

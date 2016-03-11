@@ -240,21 +240,6 @@ class WifiModule(wishful_module.AgentModule):
         return True
 
 
-    @wishful_module.bind_function(upis.net.set_ARP_entry)
-    def set_ARP_entry(self, iface, mac_addr, ip_addr):
-        """
-            Manipulates the local ARP cache.
-            tbd: use Netlink API
-        """
-        try:
-            [rcode, sout, serr] = self.run_command('sudo arp -s ' + ip_addr + ' -i '+ iface + ' ' + mac_addr)
-            return sout
-        except Exception as e:
-            fname = inspect.currentframe().f_code.co_name
-            self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
-
-
     @wishful_module.bind_function(upis.wifi.net.disconnect_device)
     def disconnect_device(self, iface, sta_mac_addr):
         """

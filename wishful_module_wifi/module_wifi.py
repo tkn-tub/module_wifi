@@ -26,32 +26,30 @@ class WifiModule(wishful_module.AgentModule):
         self.power = 1
 
 
-    @wishful_module.bind_function(upis.radio.set_channel)
-    def set_channel(self, channel):
-        self.log.debug("WIFI Module sets channel: {} on interface: {}".format(channel, self.interface))
-        self.channel = channel
-        return ["SET_CHANNEL_OK", channel, 0]
+    @wishful_module.bind_function(upis.wifi.radio.set_channel)
+    def set_channel(self, iface, channel):
+
+        self.log.info('setting channel(): %s->%s' % (str(iface), str(channel)))
+
+        cmd_str = 'sudo iwconfig ' + iface + ' channel ' + str(channel)
+
+        try:
+            [rcode, sout, serr] = self.run_command(cmd_str)
+        except Exception as e:
+            fname = inspect.currentframe().f_code.co_name
+            self.log.fatal("An error occurred in %s: %s" % (fname, e))
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
+
+        return True
 
 
-    @wishful_module.bind_function(upis.radio.get_channel)
+    @wishful_module.bind_function(upis.wifi.radio.get_channel)
     def get_channel(self):
         self.log.debug("WIFI Module gets channel of interface: {}".format(self.interface))
         return self.channel
 
 
-    @wishful_module.bind_function(upis.radio.set_power)
-    def set_power(self, power):
-        self.log.debug("WIFI Module sets power: {} on interface: {}".format(power, self.interface))
-        self.power = power
-        return {"SET_POWER_OK_value" : power}
-
-
-    @wishful_module.bind_function(upis.radio.get_power)
-    def get_power(self):
-        self.log.debug("WIFI Module gets power on interface: {}".format(self.interface))
-        return self.power
-
-    @wishful_module.bind_function(upis.net.get_info_of_connected_devices)
+    @wishful_module.bind_function(upis.wifi.net.get_info_of_connected_devices)
     def get_info_of_connected_devices(self):
         '''
             Returns information about associated STAs for a node running in AP mode
@@ -95,7 +93,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.get_inactivity_time_of_connected_devices)
+
+    @wishful_module.bind_function(upis.wifi.net.get_inactivity_time_of_connected_devices)
     def get_inactivity_time_of_connected_devices(self):
 
         self.log.debug("WIFI Module get inactivity time of associated clients on interface: {}".format(self.interface))
@@ -117,7 +116,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.get_avg_sigpower_of_connected_devices)
+
+    @wishful_module.bind_function(upis.wifi.net.get_avg_sigpower_of_connected_devices)
     def get_avg_sigpower_of_connected_devices(self):
 
         try:
@@ -136,23 +136,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.radio.set_channel)
-    def set_channel(self, iface, channel):
 
-        self.log.info('setting channel(): %s->%s' % (str(iface), str(channel)))
-
-        cmd_str = 'sudo iwconfig ' + iface + ' channel ' + str(channel)
-
-        try:
-            [rcode, sout, serr] = self.run_command(cmd_str)
-        except Exception as e:
-            fname = inspect.currentframe().f_code.co_name
-            self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
-
-        return True
-
-    @wishful_module.bind_function(upis.net.connect_to_network)
+    @wishful_module.bind_function(upis.wifi.net.connect_to_network)
     def connect_to_network(self, iface, **kwargs):
 
         ssid = kwargs.get('ssid')
@@ -219,7 +204,6 @@ class WifiModule(wishful_module.AgentModule):
             return tx_frame_rate
 
 
-
     @wishful_module.bind_function(upis.net.sniff_layer2_traffic)
     def sniff_layer2_traffic(self, iface, sniff_timeout, **kwargs):
 
@@ -255,6 +239,7 @@ class WifiModule(wishful_module.AgentModule):
 
         return True
 
+
     @wishful_module.bind_function(upis.net.set_ARP_entry)
     def set_ARP_entry(self, iface, mac_addr, ip_addr):
         """
@@ -269,7 +254,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.disconnect_device)
+
+    @wishful_module.bind_function(upis.wifi.net.disconnect_device)
     def disconnect_device(self, iface, sta_mac_addr):
         """
             Send a disaccociation request frame to a client STA associated with this AP.
@@ -291,7 +277,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.remove_device_from_blacklist)
+
+    @wishful_module.bind_function(upis.wifi.net.remove_device_from_blacklist)
     def remove_device_from_blacklist(self, iface, sta_mac_addr):
         """
             Unblacklist a given STA in the AP, i.e. the STA is able to associate with this AP afterwards.
@@ -313,7 +300,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.add_device_to_blacklist)
+
+    @wishful_module.bind_function(upis.wifi.net.add_device_to_blacklist)
     def add_device_to_blacklist(self, iface, sta_mac_addr):
         """
             Blacklist a given STA in the AP, i.e. any request for association by the STA will be ignored by the AP.
@@ -335,7 +323,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.register_new_device)
+
+    @wishful_module.bind_function(upis.wifi.net.register_new_device)
     def register_new_device(self, iface, sta_mac_addr):
         """
             Register a new STA within the AP, i.e. afterwards the STA is able to exchange data frames.
@@ -356,7 +345,8 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
-    @wishful_module.bind_function(upis.net.trigger_channel_switch_in_device)
+
+    @wishful_module.bind_function(upis.wifi.net.trigger_channel_switch_in_device)
     def trigger_channel_switch_in_device(self, iface, sta_mac_addr, target_channel, serving_channel, **kwargs):
         """
             Transmit Channel Switch Announcement (CSA) beacon to the given STA.

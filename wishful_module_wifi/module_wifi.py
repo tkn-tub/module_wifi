@@ -96,45 +96,82 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.wifi.net.get_inactivity_time_of_connected_devices)
     def get_inactivity_time_of_connected_devices(self):
-
-        self.log.debug("WIFI Module get inactivity time of associated clients on interface: {}".format(self.interface))
-
-        try:
-            res = self.get_info_of_connected_devices()
-
-            rv = {}
-            for mac_addr in res:
-                inactive_time = res[mac_addr]['inactive time']
-                self.log.info('%s -> %s' % (mac_addr, inactive_time))
-
-                rv[mac_addr] = inactive_time
-
-            # dict of mac_addr -> inactivity_time
-            return rv
-        except Exception as e:
-            fname = inspect.currentframe().f_code.co_name
-            self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
+        return self.get_entry_of_connected_devices('inactive time')
 
 
     @wishful_module.bind_function(upis.wifi.net.get_avg_sigpower_of_connected_devices)
     def get_avg_sigpower_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('signal avg')
 
-        try:
-            res = self.get_info_of_connected_devices()
 
-            rv = {}
-            for mac_addr in res:
-                sig_avg = res[mac_addr]['signal avg']
-                self.log.info('%s -> %s' % (mac_addr, sig_avg))
-                rv[mac_addr] = sig_avg
+    @wishful_module.bind_function(upis.wifi.net.get_sigpower_of_connected_devices)
+    def get_sigpower_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('signal')
 
-            # dict of mac_addr -> avg. signal power (UL)
-            return rv
-        except Exception as e:
-            fname = inspect.currentframe().f_code.co_name
-            self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
+
+    @wishful_module.bind_function(upis.wifi.net.get_tx_retries_of_connected_devices)
+    def get_tx_retries_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('tx retries')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_tx_packets_of_connected_devices)
+    def get_tx_packets_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('tx packets')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_tx_failed_of_connected_devices)
+    def get_tx_failed_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('tx failed')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_tx_bytes_of_connected_devices)
+    def get_tx_bytes_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('tx bytes')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_tx_bitrate_of_connected_devices)
+    def get_tx_bitrate_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('tx bitrate')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_rx_bytes_of_connected_devices)
+    def get_rx_bytes_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('rx bytes')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_rx_packets_of_connected_devices)
+    def get_rx_packets_of_connected_devices(self):
+        return self.get_entry_of_connected_devices('rx packets')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_authorized_connected_device)
+    def get_authorized_connected_device(self):
+        return self.get_entry_of_connected_devices('authorized')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_authenticated_connected_device)
+    def get_authenticated_connected_device(self):
+        return self.get_entry_of_connected_devices('authenticated')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_used_preamble_connected_device)
+    def get_used_preamble_connected_device(self):
+        return self.get_entry_of_connected_devices('preamble')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_mfp_connected_device)
+    def get_mfp_connected_device(self):
+        return self.get_entry_of_connected_devices('MFP')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_wmm_wme_connected_device)
+    def get_wmm_wme_connected_device(self):
+        return self.get_entry_of_connected_devices('WMM/WME')
+
+
+    @wishful_module.bind_function(upis.wifi.net.get_tdls_peer_connected_device)
+    def get_tdls_peer_connected_device(self):
+        return self.get_entry_of_connected_devices('TDLS peer')
 
 
     @wishful_module.bind_function(upis.wifi.net.connect_to_network)
@@ -357,6 +394,24 @@ class WifiModule(wishful_module.AgentModule):
     #################################################
     # Helper functions
     #################################################
+
+    def get_entry_of_connected_devices(self, key):
+
+        try:
+            res = self.get_info_of_connected_devices()
+
+            rv = {}
+            for mac_addr in res:
+                value = res[mac_addr][key]
+                self.log.info('%s -> %s' % (mac_addr, value))
+                rv[mac_addr] = value
+
+            # dict of mac_addr -> value
+            return rv
+        except Exception as e:
+            fname = inspect.currentframe().f_code.co_name
+            self.log.fatal("An error occurred in %s: %s" % (fname, e))
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
     def run_command(self, command):
         '''

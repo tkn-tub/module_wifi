@@ -25,6 +25,28 @@ class WifiModule(wishful_module.AgentModule):
         self.channel = 1
         self.power = 1
 
+    @wishful_module.bind_function(upis.radio.set_power)
+    def set_power(self, power_dBm):
+
+        self.log.info('setting channel(): %s->%s' % (str(self.interface), str(power_dBm)))
+
+        cmd_str = 'iw ' + self.interface + ' set txpower fixed ' + str(power_dBm)
+
+        try:
+            [rcode, sout, serr] = self.run_command(cmd_str)
+        except Exception as e:
+            fname = inspect.currentframe().f_code.co_name
+            self.log.fatal("An error occurred in %s: %s" % (fname, e))
+            raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
+
+        self.power = power_dBm
+
+
+    @wishful_module.bind_function(upis.radio.get_power)
+    def get_power(self):
+        self.log.debug("WIFI Module gets power of interface: {}".format(self.interface))
+        return self.power
+
 
     @wishful_module.bind_function(upis.wifi.radio.set_channel)
     def set_channel(self, iface, channel):

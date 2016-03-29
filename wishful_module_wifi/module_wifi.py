@@ -454,7 +454,7 @@ class WifiModule(wishful_module.AgentModule):
         if err:
             raise Exception("An error occurred in Dot80211Linux: %s" % err)
 
-        return [sp.returncode, out, err]
+        return [sp.returncode, out.decode("utf-8"), err.decode("utf-8")]
 
     def run_timeout_command(self, command, timeout):
         """

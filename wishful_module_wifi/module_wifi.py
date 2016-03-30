@@ -49,11 +49,11 @@ class WifiModule(wishful_module.AgentModule):
 
 
     @wishful_module.bind_function(upis.wifi.radio.set_channel)
-    def set_channel(self, iface, channel):
+    def set_channel(self, channel):
 
-        self.log.info('setting channel(): %s->%s' % (str(iface), str(channel)))
+        self.log.info('setting channel(): %s->%s' % (str(self.interface), str(channel)))
 
-        cmd_str = 'sudo iwconfig ' + iface + ' channel ' + str(channel)
+        cmd_str = 'sudo iwconfig ' + self.interface + ' channel ' + str(channel)
 
         try:
             [rcode, sout, serr] = self.run_command(cmd_str)

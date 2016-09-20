@@ -1,9 +1,7 @@
 import logging
 import random
 import wishful_upis as upis
-import wishful_framework as wishful_module
 import subprocess
-from wishful_framework.classes import exceptions
 import inspect
 import fcntl, socket, struct
 import netifaces as ni
@@ -11,28 +9,29 @@ from scapy.all import *
 from datetime import date, datetime
 import os
 
-__author__ = "Piotr Gawlowicz, Mikolaj Chwalisz, Zubow"
+from wishful_agent.core import wishful_module
+from wishful_agent.core import exceptions
+
+__author__ = "Piotr Gawlowicz, Anatolij Zubow"
 __copyright__ = "Copyright (c) 2015, Technische Universität Berlin"
 __version__ = "0.1.0"
-__email__ = "{gawlowicz, chwalisz, zubow}@tkn.tu-berlin.de"
+__email__ = "{gawlowicz, zubow}@tkn.tu-berlin.de"
 
 @wishful_module.build_module
 class WifiModule(wishful_module.AgentModule):
     def __init__(self):
         super(WifiModule, self).__init__()
         self.log = logging.getLogger('wifi_module.main')
-        self.interface = "wlan0"
-        self.channel = 1
-        self.power = 1
+        self.channel = -1
+        self.power = -1
 
     @wishful_module.bind_function(upis.radio.set_power)
-    def set_power(self, power_dBm):
+    def set_power(self, power_dBm, interface):
 
-        self.log.info('setting channel(): %s->%s' % (str(self.interface), str(power_dBm)))
-
-        cmd_str = 'iw ' + self.interface + ' set txpower fixed ' + str(power_dBm)
+        self.log.info('setting power on iface %s to %s' % (interface, str(power_dBm)))
 
         try:
+            cmd_str = 'iw ' + interface + ' set txpower fixed ' + str(power_dBm)
             [rcode, sout, serr] = self.run_command(cmd_str)
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
@@ -40,48 +39,48 @@ class WifiModule(wishful_module.AgentModule):
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
         self.power = power_dBm
-
+        return True
 
     @wishful_module.bind_function(upis.radio.get_power)
-    def get_power(self):
-        self.log.debug("WIFI Module gets power of interface: {}".format(self.interface))
+    def get_power(self, interface):
+        self.log.debug("getting power of interface: {}".format(interface))
         return self.power
 
 
     @wishful_module.bind_function(upis.wifi.radio.set_channel)
-    def set_channel(self, channel):
+    def set_channel(self, channel, interface):
 
-        self.log.info('setting channel(): %s->%s' % (str(self.interface), str(channel)))
-
-        cmd_str = 'sudo iwconfig ' + self.interface + ' channel ' + str(channel)
+        self.log.info('setting channel(): %s->%s' % (interface, str(channel)))
 
         try:
+            cmd_str = 'sudo iwconfig ' + interface + ' channel ' + str(channel)
             [rcode, sout, serr] = self.run_command(cmd_str)
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.UPIFunctionExecutionFailedException(func_name=fname, err_msg=str(e))
 
+        self.channel = channel
         return True
 
 
     @wishful_module.bind_function(upis.wifi.radio.get_channel)
-    def get_channel(self):
-        self.log.debug("WIFI Module gets channel of interface: {}".format(self.interface))
+    def get_channel(self, interface):
+        self.log.debug("getting channel of interface: {}".format(interface))
         return self.channel
 
 
     @wishful_module.bind_function(upis.wifi.net.get_info_of_connected_devices)
-    def get_info_of_connected_devices(self):
+    def get_info_of_connected_devices(self, interface):
         '''
             Returns information about associated STAs for a node running in AP mode
             tbd: use Netlink API
         '''
 
-        self.log.info("WIFI Module get info on associated clients on interface: {}".format(self.interface))
+        self.log.info("WIFI Module get info on associated clients on interface: {}".format(interface))
 
         try:
-            [rcode, sout, serr] = self.run_command('iw dev ' + self.interface + ' station dump')
+            [rcode, sout, serr] = self.run_command('iw dev ' + interface + ' station dump')
 
             # mac_addr -> stat_key -> list of (value, unit)
             res = {}
@@ -117,83 +116,83 @@ class WifiModule(wishful_module.AgentModule):
 
 
     @wishful_module.bind_function(upis.wifi.net.get_inactivity_time_of_connected_devices)
-    def get_inactivity_time_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('inactive time')
+    def get_inactivity_time_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('inactive time', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_avg_sigpower_of_connected_devices)
-    def get_avg_sigpower_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('signal avg')
+    def get_avg_sigpower_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('signal avg', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_sigpower_of_connected_devices)
-    def get_sigpower_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('signal')
+    def get_sigpower_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('signal', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_tx_retries_of_connected_devices)
-    def get_tx_retries_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('tx retries')
+    def get_tx_retries_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('tx retries', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_tx_packets_of_connected_devices)
-    def get_tx_packets_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('tx packets')
+    def get_tx_packets_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('tx packets', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_tx_failed_of_connected_devices)
-    def get_tx_failed_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('tx failed')
+    def get_tx_failed_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('tx failed', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_tx_bytes_of_connected_devices)
-    def get_tx_bytes_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('tx bytes')
+    def get_tx_bytes_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('tx bytes', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_tx_bitrate_of_connected_devices)
-    def get_tx_bitrate_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('tx bitrate')
+    def get_tx_bitrate_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('tx bitrate', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_rx_bytes_of_connected_devices)
-    def get_rx_bytes_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('rx bytes')
+    def get_rx_bytes_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('rx bytes', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_rx_packets_of_connected_devices)
-    def get_rx_packets_of_connected_devices(self):
-        return self.get_entry_of_connected_devices('rx packets')
+    def get_rx_packets_of_connected_devices(self, iface):
+        return self.get_entry_of_connected_devices('rx packets', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_authorized_connected_device)
-    def get_authorized_connected_device(self):
-        return self.get_entry_of_connected_devices('authorized')
+    def get_authorized_connected_device(self, iface):
+        return self.get_entry_of_connected_devices('authorized', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_authenticated_connected_device)
-    def get_authenticated_connected_device(self):
-        return self.get_entry_of_connected_devices('authenticated')
+    def get_authenticated_connected_device(self, iface):
+        return self.get_entry_of_connected_devices('authenticated', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_used_preamble_connected_device)
-    def get_used_preamble_connected_device(self):
-        return self.get_entry_of_connected_devices('preamble')
+    def get_used_preamble_connected_device(self, iface):
+        return self.get_entry_of_connected_devices('preamble', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_mfp_connected_device)
-    def get_mfp_connected_device(self):
-        return self.get_entry_of_connected_devices('MFP')
+    def get_mfp_connected_device(self, iface):
+        return self.get_entry_of_connected_devices('MFP', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_wmm_wme_connected_device)
-    def get_wmm_wme_connected_device(self):
-        return self.get_entry_of_connected_devices('WMM/WME')
+    def get_wmm_wme_connected_device(self, iface):
+        return self.get_entry_of_connected_devices('WMM/WME', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.get_tdls_peer_connected_device)
-    def get_tdls_peer_connected_device(self):
-        return self.get_entry_of_connected_devices('TDLS peer')
+    def get_tdls_peer_connected_device(self, iface):
+        return self.get_entry_of_connected_devices('TDLS peer', iface)
 
 
     @wishful_module.bind_function(upis.wifi.net.connect_to_network)
@@ -417,10 +416,10 @@ class WifiModule(wishful_module.AgentModule):
     # Helper functions
     #################################################
 
-    def get_entry_of_connected_devices(self, key):
+    def get_entry_of_connected_devices(self, key, iface):
 
         try:
-            res = self.get_info_of_connected_devices()
+            res = self.get_info_of_connected_devices(iface)
 
             rv = {}
             for mac_addr in res:

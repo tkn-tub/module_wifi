@@ -4,11 +4,14 @@ import subprocess
 import inspect
 from scapy.all import *
 
+# pip install -U -e git+https://github.com/wraith-wireless/PyRIC#egg=pyric
 import pyric                           # pyric error (and ecode EUNDEF)
 from pyric import pyw                  # for iw functionality
 import pyric.utils.hardware as hw      # for chipset/driver
 from pyric.utils.channels import rf2ch  # rf to channel conversion
 from pyric.utils.channels import ch2rf  # rf to channel conversion
+
+from pyroute2 import IW
 
 import wishful_upis as upis
 from wishful_agent.core import wishful_module
@@ -63,6 +66,103 @@ class WifiModule(wishful_module.AgentModule):
             return True
 
         return False
+
+    def get_interfaces(self):
+        ifaces = _get_my_ifaces()
+        return ifaces
+
+    def get_interface_info(self, ifaceName):
+        if not self._check_if_my_iface():
+            return False  # todo : raise exception
+        dinfo = pyw.devinfo(interface)
+        return dinfo
+
+    def get_phy_info(self, ifaceName):
+        if not self._check_if_my_iface():
+            return False  # todo : raise exception
+        dinfo = pyw.devinfo(interface)
+        card = dinfo['card']
+        pinfo = pyw.phyinfo(card)
+        return pinfo
+
+    def add_interface(self, ifaceName, mode):
+        if ifaceName in pyw.winterfaces():
+            return False
+
+        iw = IW()
+        mode2int = {'adhoc': 1,
+                    'sta': 2,
+                    'station': 2,
+                    'managed': 2,
+                    'ap': 3,
+                    'ap_vlan': 4,
+                    'wds': 5,
+                    'monitor': 6,
+                    'mesh_point': 7,
+                    'p2p_client': 8,
+                    'p2p_go': 9,
+                    'p2p_device': 10,
+                    'ocb': 11}
+
+        modeInt = mode2int.get(mode, None)
+        if modeInt is None:
+            return False
+
+        iw.add_interface(ifaceName, modeInt, None, 0)
+        return True
+
+    def delete_interface(self, ifaceName):
+        if not self._check_if_my_iface(ifaceName):
+            return False  # todo : raise exception
+        card = pyw.getcard(ifaceName)  # get a card for this iface
+        pyw.devdel(card)
+
+    def set_interface_up(self, ifaceName):
+        if not self._check_if_my_iface(ifaceName):
+            return False  # todo : raise exception
+        card = pyw.getcard(ifaceName)  # get a card for this iface
+        pyw.up(card)
+        pyw.unblock(card)  # turn off the softblock
+
+        status = pyw.isblocked(card)
+        self.log.info('Isblocked: %s' % str(status))
+        ret = pyw.isup(card)
+        return ret
+
+    def set_interface_down(self, ifaceName):
+        if not self._check_if_my_iface(ifaceName):
+            return False  # todo : raise exception
+        card = pyw.getcard(ifaceName)  # get a card for this iface
+        pyw.down(card)
+        return True
+
+    def isconnected(self, ifaceName):
+        if not self._check_if_my_iface(ifaceName):
+            return False  # todo : raise exception
+        card = pyw.getcard(ifaceName)  # get a card for this iface
+        return pyw.isconnected(card)
+
+    def disconnect(self, ifaceName):
+        if not self._check_if_my_iface(ifaceName):
+            return False  # todo : raise exception
+        card = pyw.getcard(ifaceName)  # get a card for this iface
+        pyw.disconnect(card)
+
+    def getLinkInfo(self, interfaceName):
+        if not self._check_if_my_iface(interfaceName):
+            return False  # todo : raise exception
+        card = pyw.getcard(interfaceName)  # get a card for this iface
+        link = pyw.link(card)
+        return link
+
+    def scan_networks(self, interfaceName):
+        try:
+            cmd = 'iw dev ' + interfaceName + ' scan'
+            [rcode, sout, serr] = self.run_command(cmd)
+            return sout
+        except Exception as e:
+            self.log.fatal("An error occurred in Dot80211Linux: %s" % e)
+            raise Exception("An error occurred in Dot80211Linux: %s" % e)
 
     @wishful_module.bind_function(upis.radio.set_power)
     def set_power(self, power_dBm, interface):
@@ -280,6 +380,20 @@ class WifiModule(wishful_module.AgentModule):
 
         return True
 
+    def getHwAddr(self, ifaceName):
+        if not self._check_if_my_iface():
+            return False  # todo : raise exception
+        w0 = pyw.getcard(interface)  # get a card for interface
+        mac = pyw.macget(w0)
+        return mac
+
+    def getIfaceIpAddr(self, ifaceName):
+        if not self._check_if_my_iface():
+            return False  # todo : raise exception
+        w0 = pyw.getcard(interface)  # get a card for interface
+        ip = pyw.inetget(w0)[0]
+        return ip
+
     @wishful_module.bind_function(upis.net.gen_layer2_traffic)
     def gen_layer2_traffic(self, iface, num_packets,
                            pkt_interval, max_phy_broadcast_rate_mbps,
@@ -291,7 +405,7 @@ class WifiModule(wishful_module.AgentModule):
         ipsrc = kwargs.get('ipsrc')
 
         # get my MAC HW address
-        myMacAddr = self.getHwAddr({'iface': iface})
+        myMacAddr = self.getHwAddr(iface)
         dstMacAddr = 'ff:ff:ff:ff:ff:ff'
 
         if pkt_interval is not None:

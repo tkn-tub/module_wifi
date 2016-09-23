@@ -13,6 +13,8 @@ from pyric.utils.channels import ch2rf  # rf to channel conversion
 
 from pyroute2 import IW
 
+from .packet_sniffer import PacketSnifferPyShark, RssiSink
+
 import wishful_upis as upis
 from wishful_agent.core import wishful_module
 from wishful_agent.core import exceptions
@@ -32,6 +34,7 @@ class WifiModule(wishful_module.AgentModule):
         self.phyIndex = None
         self.channel = None
         self.power = None
+        self.packetSniffer = None
 
     @wishful_module.on_start()
     def my_start_function(self):
@@ -657,6 +660,32 @@ class WifiModule(wishful_module.AgentModule):
             # repetitive transmission
             sendp(beacon, iface=iface)
         return True
+
+    def send_rssi_event(self, ta, rssi):
+        self.log.debug("RSSI sample: TA: {}, value: {}"
+                       .format(ta, rssi))
+        sample = upis.radio.RssiSampleEvent(
+            ta=ta,
+            rssi=rssi)
+        self.send_event(sample)
+
+    @wishful_module.service_start(upis.radio.RssiService)
+    def rssi_service_start(self):
+        self._rssiServiceRunning = True
+        # iface = event.iface
+        iface = 'mon0'
+
+        if not self.packetSniffer:
+            self.packetSniffer = PacketSnifferPyShark(iface=iface)
+            self.packetSniffer.start()
+
+        self.rssiSink = RssiSink(callback=self.send_rssi_event)
+        self.packetSniffer.add_sink(self.rssiSink)
+
+
+    @wishful_module.service_stop(upis.radio.RssiService)
+    def rssi_service_stop(self):
+        self._rssiServiceRunning = False
 
     #################################################
     # Helper functions

@@ -1,8 +1,10 @@
 from setuptools import setup, find_packages
 
+
 def readme():
     with open('README.md') as f:
         return f.read()
+
 
 setup(
     name='wishful_module_wifi',
@@ -15,5 +17,5 @@ setup(
     description='WiSHFUL WIFI Module',
     long_description='Implementation of a wireless agent using the unified programming interfaces (UPIs) of the Wishful project.',
     keywords='wireless control',
-    install_requires=[]
+    install_requires=['pyric', 'pyshark']
 )

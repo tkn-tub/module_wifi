@@ -664,10 +664,8 @@ class WifiModule(wishful_module.AgentModule):
     def send_rssi_event(self, ta, rssi):
         self.log.debug("RSSI sample: TA: {}, value: {}"
                        .format(ta, rssi))
-        sample = upis.radio.RssiSampleEvent(
-            ta=ta,
-            rssi=rssi)
-        self.send_event(sample)
+        sampleEvent = upis.radio.RssiSampleEvent(ta=ta, rssi=rssi)
+        self.send_event(sampleEvent)
 
     @wishful_module.service_start(upis.radio.RssiService)
     def rssi_service_start(self):
@@ -681,7 +679,6 @@ class WifiModule(wishful_module.AgentModule):
 
         self.rssiSink = RssiSink(callback=self.send_rssi_event)
         self.packetSniffer.add_sink(self.rssiSink)
-
 
     @wishful_module.service_stop(upis.radio.RssiService)
     def rssi_service_stop(self):

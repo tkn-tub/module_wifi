@@ -699,37 +699,173 @@ class WifiModule(wishful_module.AgentModule):
         '''
         return pyw.regset(new_domain)
 
-    @wishful_module.bind_function(upis.radio.is_rf_blocked)
+    @wishful_module.bind_function(upis.wifi.is_rf_blocked)
     def is_rf_blocked(self, iface):
         '''
         Returns information about rf blocks (Soft Block, Hard Block)
         '''
-        if not self._check_if_my_iface(iface):
-            self.log.error('check_if_my_iface failed')
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='No such interface: ' + iface)
-        w0 = pyw.getcard(iface)  # get a card for interface
-
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
         return pyw.isblocked(w0)
 
 
-    @wishful_module.bind_function(upis.radio.rf_unblock)
+    @wishful_module.bind_function(upis.wifi.rf_unblock)
     def rf_unblock(self, iface):
         '''
         Turn off the softblock
         '''
-        if not self._check_if_my_iface(iface):
-            self.log.error('check_if_my_iface failed')
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='No such interface: ' + iface)
-        w0 = pyw.getcard(iface)  # get a card for interface
-
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
         pyw.unblock(w0)  # turn off the softblock
+
+    @wishful_module.bind_function(upis.radio.set_mac_address)
+    def set_mac_address(self, iface, new_mac_addr):
+        '''
+        Sets a new MAC address on wireless interface
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pyw.macset(w0, new_mac_addr)
+
+
+    @wishful_module.bind_function(upis.wifi.set_power_management)
+    def set_power_management(self, iface, value):
+        '''
+        Sets power management
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pyw.pwrsaveset(w0, value)
+
+    @wishful_module.bind_function(upis.wifi.get_power_management)
+    def get_power_management(self, iface):
+        '''
+        Get power management
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.pwrsaveget(w0)
+
+    @wishful_module.bind_function(upis.wifi.set_retry_short)
+    def set_retry_short(self, iface, value):
+        '''
+        Sets retry short
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pyw.retryshortset(w0, value)
+
+    @wishful_module.bind_function(upis.wifi.get_retry_short)
+    def get_retry_short(self, iface):
+        '''
+        Get retry short
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.retryshortget(w0)
+
+
+    @wishful_module.bind_function(upis.wifi.set_retry_long)
+    def set_retry_long(self, iface, value):
+        '''
+        Sets retry long
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pyw.retrylongset(w0, value)
+
+    @wishful_module.bind_function(upis.wifi.get_retry_long)
+    def get_retry_long(self, iface):
+        '''
+        Get retry long
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.retrylongget(w0)
+
+
+    @wishful_module.bind_function(upis.wifi.set_rts_threshold)
+    def set_rts_threshold(self, iface, value):
+        '''
+        Sets RTS threshold
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pyw.rtsthreshset(w0, value)
+
+    @wishful_module.bind_function(upis.wifi.get_rts_threshold)
+    def get_rts_threshold(self, iface):
+        '''
+        Get RTS threshold
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.rtsthreshget(w0)
+
+    @wishful_module.bind_function(upis.wifi.set_fragmentation_threshold)
+    def set_fragmentation_threshold(self, iface, value):
+        '''
+        Sets framgmentation threshold
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pyw.fragthreshset(w0, value)
+
+    @wishful_module.bind_function(upis.wifi.get_fragmentation_threshold)
+    def get_fragmentation_threshold(self, iface):
+        '''
+        Get framgmentation threshold
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.fragthreshget(w0)
+
+    @wishful_module.bind_function(upis.wifi.get_supported_modes)
+    def get_supported_modes(self, iface):
+        '''
+        Get supported WiFi modes
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pinfo = pyw.phyinfo(w0)
+        return pinfo['modes']
+
+    @wishful_module.bind_function(upis.wifi.get_supported_swmodes)
+    def get_supported_swmodes(self, iface):
+        '''
+        Get supported WiFi software modes
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pinfo = pyw.phyinfo(w0)
+        return pinfo['swmodes']
+
+    @wishful_module.bind_function(upis.wifi.get_rf_band_info)
+    def get_rf_band_info(self, iface):
+        '''
+        Get info about supported RF bands
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pinfo = pyw.phyinfo(w0)
+        return pinfo['bands']
+
+    @wishful_module.bind_function(upis.wifi.get_ciphers)
+    def get_ciphers(self, iface):
+        '''
+        Get info about supported ciphers
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        pinfo = pyw.phyinfo(w0)
+        return pinfo['ciphers']
+
+    @wishful_module.bind_function(upis.wifi.get_supported_wifi_standards)
+    def get_supported_wifi_standards(self, iface):
+        '''
+        Get info about supported WiFi standards, i.e. 802.11a/n/g/ac/b
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.devstds(w0)
 
 
     #################################################
     # Helper functions
     #################################################
+
+    def get_wifi_chard(self, iface):
+        '''
+        Get WiFi chard
+        '''
+
+        if not self._check_if_my_iface(iface):
+            self.log.error('check_if_my_iface failed')
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='No such interface: ' + iface)
+        return pyw.getcard(iface)  # get a card for interface
 
     def get_entry_of_connected_devices(self, key, iface):
 

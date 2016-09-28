@@ -207,7 +207,6 @@ class WifiModule(wishful_module.AgentModule):
     def set_tx_power(self, power_dBm, ifaceName):
         self.log.info('Setting power on iface {}:{} to {}'
                       .format(ifaceName, self.device, str(power_dBm)))
-
         try:
             if not self._check_if_my_iface(ifaceName):
                 return False  # todo : raise exception

@@ -9,11 +9,11 @@ agent_config:
 controllers:
   myController:
       file : local_test.py
-      class_name : WifiController
+      class_name : WifiTestController
       kwargs : {}
 
 modules:
-  wifiath:
+  wifi:
       module : wishful_module_wifi
       class_name : WifiModule
       devices : ['phy0']

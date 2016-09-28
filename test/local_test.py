@@ -16,10 +16,10 @@ Local test of WiFi component.
 '''
 
 @wishful_module.build_module
-class WifiController(wishful_module.ControllerModule):
+class WifiTestController(wishful_module.ControllerModule):
     def __init__(self):
-        super(WifiController, self).__init__()
-        self.log = logging.getLogger('WifiController')
+        super(WifiTestController, self).__init__()
+        self.log = logging.getLogger('WifiTestController')
 
     @wishful_module.on_start()
     def my_start_function(self):
@@ -35,7 +35,7 @@ class WifiController(wishful_module.ControllerModule):
 
             curr_pwr = device.radio.get_power(iface)
 
-            self.log.info('ATH::get_power' % str(curr_pwr))
+            self.log.info('WIFI::get_power' % str(curr_pwr))
         except Exception as e:
             self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 

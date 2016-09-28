@@ -209,22 +209,24 @@ class WifiModule(wishful_module.AgentModule):
                       .format(ifaceName, self.device, str(power_dBm)))
         try:
             if not self._check_if_my_iface(ifaceName):
-                return False  # todo : raise exception
+                self.log.error('check_if_my_iface failed')
+                raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                            err_msg='No such interface: ' + ifaceName)
             w0 = pyw.getcard(ifaceName)  # get a card for interface
             pyw.txset(w0, 'fixed', power_dBm)
             self.power = power_dBm
         except Exception as e:
-            fname = inspect.currentframe().f_code.co_name
-            self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailed(func_name=fname,
-                                                        err_msg=str(e))
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='Failed to set tx power: ' + str(e))
         return True
 
     @wishful_module.bind_function(upis.radio.get_tx_power)
     def get_tx_power(self, ifaceName):
         self.log.debug("getting power of interface: {}".format(ifaceName))
         if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
+            self.log.error('check_if_my_iface failed')
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='No such interface: ' + ifaceName)
         else:
             w0 = pyw.getcard(ifaceName)  # get a card
             self.power = pyw.txget(w0)

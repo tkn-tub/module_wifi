@@ -2,6 +2,7 @@ import logging
 import datetime
 import time
 import random
+from random import randint
 import wishful_upis as upis
 from wishful_agent.core import wishful_module
 from wishful_agent.timer import TimerEventSender
@@ -13,6 +14,8 @@ __email__ = "{zubow}@tkn.tu-berlin.de"
 
 '''
 Local test of WiFi component.
+
+sudo ../../../dev/bin/wishful-agent --config config_local.yaml
 '''
 
 @wishful_module.build_module
@@ -33,9 +36,18 @@ class WifiTestController(wishful_module.ControllerModule):
 
             iface = 'wlan6'
 
-            curr_pwr = device.radio.get_power(iface)
+            curr_pwr = device.radio.get_tx_power(iface)
+            self.log.info('WIFI::get_power %d' % curr_pwr)
 
-            self.log.info('WIFI::get_power' % str(curr_pwr))
+            new_pwr = randint(1,17)
+            self.log.info('WIFI::set_power to %d' % new_pwr)
+            curr_pwr = device.radio.set_tx_power(new_pwr, iface)
+
+            time.sleep(0.5)
+
+            curr_pwr = device.radio.get_tx_power(iface)
+            self.log.info('WIFI::get_power %d' % curr_pwr)
+
         except Exception as e:
             self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
 

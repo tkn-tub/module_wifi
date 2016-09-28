@@ -685,6 +685,48 @@ class WifiModule(wishful_module.AgentModule):
     def rssi_service_stop(self):
         self._rssiServiceRunning = False
 
+    @wishful_module.bind_function(upis.radio.get_regulatory_domain)
+    def get_regulatory_domain(self):
+        '''
+        Returns the regulatory domain
+        '''
+        return pyw.regget()
+
+    @wishful_module.bind_function(upis.radio.set_regulatory_domain)
+    def set_regulatory_domain(self, new_domain):
+        '''
+        Sets the regulatory domain
+        '''
+        return pyw.regset(new_domain)
+
+    @wishful_module.bind_function(upis.radio.is_rf_blocked)
+    def is_rf_blocked(self, iface):
+        '''
+        Returns information about rf blocks (Soft Block, Hard Block)
+        '''
+        if not self._check_if_my_iface(iface):
+            self.log.error('check_if_my_iface failed')
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='No such interface: ' + iface)
+        w0 = pyw.getcard(iface)  # get a card for interface
+
+        return pyw.isblocked(w0)
+
+
+    @wishful_module.bind_function(upis.radio.rf_unblock)
+    def rf_unblock(self, iface):
+        '''
+        Turn off the softblock
+        '''
+        if not self._check_if_my_iface(iface):
+            self.log.error('check_if_my_iface failed')
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='No such interface: ' + iface)
+        w0 = pyw.getcard(iface)  # get a card for interface
+
+        pyw.unblock(w0)  # turn off the softblock
+
+
     #################################################
     # Helper functions
     #################################################

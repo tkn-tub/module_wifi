@@ -1,19 +1,25 @@
-import os
+import os, signal
 import logging
 import subprocess
 import inspect
-from scapy.all import *
-
+import binascii
+from datetime import date, datetime
 # pip install -U -e git+https://github.com/wraith-wireless/PyRIC#egg=pyric
 import pyric                           # pyric error (and ecode EUNDEF)
 from pyric import pyw                  # for iw functionality
 import pyric.utils.hardware as hw      # for chipset/driver
 from pyric.utils.channels import rf2ch  # rf to channel conversion
 from pyric.utils.channels import ch2rf  # rf to channel conversion
-
 from pyroute2 import IW
 
 from .packet_sniffer import PacketSnifferPyShark, RssiSink
+from scapy.all import *
+
+# this is just for Pycharm; do not remove
+from scapy.layers.dot11 import Dot11
+from scapy.layers.dot11 import RadioTap
+from scapy.layers.inet import IP
+from scapy.layers.l2 import LLC, SNAP
 
 import wishful_upis as upis
 from wishful_agent.core import wishful_module
@@ -447,6 +453,8 @@ class WifiModule(wishful_module.AgentModule):
             return 1.0 / pkt_interval
         else:
             assert max_phy_broadcast_rate_mbps is not None
+            ipPayloadSize = kwargs["ipPayloadSize"]
+            phyBroadcastMbps = kwargs["phyBroadcastMbps"]
 
             use_tcpreplay = kwargs.get('use_tcpreplay')
 

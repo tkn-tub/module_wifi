@@ -833,6 +833,34 @@ class WifiModule(wishful_module.AgentModule):
         w0 = self.get_wifi_chard(self, iface)  # get a card for interface
         return pyw.devstds(w0)
 
+    @wishful_module.bind_function(upis.wifi.set_modulation_rate)
+    def set_modulation_rate(self, ifaceName, is5Ghzband, isLegacy, rate_Mbps_or_ht_mcs):
+        '''
+        Sets a fix PHY modulation rate:
+        - legacy: bitrate
+        - 11n/ac: ht_mcs
+        '''
+
+        try:
+            if isLegacy:
+                arg = 'legacy'
+            else:
+                arg = 'ht-mcs'
+
+            if is5Ghzband:
+                arg = arg + '-5'
+            else:
+                arg = arg + '-2.4'
+
+                arg = arg + ' ' + rate_Mbps_or_ht_mcs
+
+            [rcode, sout, serr] = self.run_command(
+                'iw dev ' + ifaceName + ' set bitrates ' + arg)
+
+        except Exception as e:
+            self.log.fatal("Failed to set bitrate: %s" % str(e))
+            raise exceptions.UPIFunctionExecutionFailedException(
+                func_name=inspect.currentframe().f_code.co_name, err_msg=str(e))
 
     #################################################
     # Helper functions

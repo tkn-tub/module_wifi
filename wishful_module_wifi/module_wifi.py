@@ -87,7 +87,9 @@ class WifiModule(wishful_module.AgentModule):
     @wishful_module.bind_function(upis.radio.get_interface_info)
     def get_interface_info(self, ifaceName):
         if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
+            self.log.error('check_if_my_iface failed')
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='No such interface: ' + iface)
         dinfo = pyw.devinfo(ifaceName)
         # Delete card object from dict
         dinfo.pop("card", None)
@@ -96,7 +98,9 @@ class WifiModule(wishful_module.AgentModule):
     @wishful_module.bind_function(upis.radio.get_phy_info)
     def get_phy_info(self, ifaceName):
         if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
+            self.log.error('check_if_my_iface failed')
+            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
+                                                        err_msg='No such interface: ' + iface)
         dinfo = pyw.devinfo(ifaceName)
         card = dinfo['card']
         pinfo = pyw.phyinfo(card)
@@ -131,16 +135,13 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.del_interface)
     def del_interface(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        card = pyw.getcard(ifaceName)  # get a card for this iface
+        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         pyw.devdel(card)
 
     @wishful_module.bind_function(upis.radio.set_interface_up)
     def set_interface_up(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        card = pyw.getcard(ifaceName)  # get a card for this iface
+        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        # TODO: replace by pyric rfkill
         cmd = "rfkill unblock wifi"
         self.run_command(cmd)
         pyw.up(card)
@@ -148,24 +149,18 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.set_interface_down)
     def set_interface_down(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        card = pyw.getcard(ifaceName)  # get a card for this iface
+        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         pyw.down(card)
         return True
 
     @wishful_module.bind_function(upis.radio.is_interface_up)
     def is_interface_up(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        w0 = pyw.getcard(ifaceName)  # get a card for this iface
+        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         return pyw.isup(w0)
 
     @wishful_module.bind_function(upis.radio.is_connected)
     def is_connected(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        card = pyw.getcard(ifaceName)  # get a card for this iface
+        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         return pyw.isconnected(card)
 
     @wishful_module.bind_function(upis.wifi.net.connect_to_network)
@@ -187,21 +182,18 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.disconnect)
     def disconnect(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        card = pyw.getcard(ifaceName)  # get a card for this iface
+        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         pyw.disconnect(card)
 
     @wishful_module.bind_function(upis.radio.get_link_info)
     def get_link_info(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        card = pyw.getcard(ifaceName)  # get a card for this iface
+        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         link = pyw.link(card)
         return link
 
     def scan_networks(self, ifaceName):
         try:
+            # TODO: replace with pyric
             cmd = 'iw dev ' + ifaceName + ' scan'
             [rcode, sout, serr] = self.run_command(cmd)
             return sout
@@ -214,11 +206,7 @@ class WifiModule(wishful_module.AgentModule):
         self.log.info('Setting power on iface {}:{} to {}'
                       .format(ifaceName, self.device, str(power_dBm)))
         try:
-            if not self._check_if_my_iface(ifaceName):
-                self.log.error('check_if_my_iface failed')
-                raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                            err_msg='No such interface: ' + ifaceName)
-            w0 = pyw.getcard(ifaceName)  # get a card for interface
+            w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
             pyw.txset(w0, 'fixed', power_dBm)
             self.power = power_dBm
         except Exception as e:
@@ -229,13 +217,8 @@ class WifiModule(wishful_module.AgentModule):
     @wishful_module.bind_function(upis.radio.get_tx_power)
     def get_tx_power(self, ifaceName):
         self.log.debug("getting power of interface: {}".format(ifaceName))
-        if not self._check_if_my_iface(ifaceName):
-            self.log.error('check_if_my_iface failed')
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='No such interface: ' + ifaceName)
-        else:
-            w0 = pyw.getcard(ifaceName)  # get a card
-            self.power = pyw.txget(w0)
+        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        self.power = pyw.txget(w0)
         return self.power
 
     @wishful_module.bind_function(upis.wifi.radio.set_channel)
@@ -244,9 +227,7 @@ class WifiModule(wishful_module.AgentModule):
         self.log.info('Setting channel for {}:{} to {}'
                       .format(ifaceName, self.device, channel))
         try:
-            if not self._check_if_my_iface(ifaceName):
-                return False  # todo : raise exception
-            w0 = pyw.getcard(ifaceName)  # get a card for interface
+            w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
             # check mode
             dinfo = pyw.devinfo(w0)
             if dinfo['mode'] == 'AP':
@@ -274,11 +255,8 @@ class WifiModule(wishful_module.AgentModule):
     def get_channel(self, ifaceName):
         self.log.info('Get channel for {}:{}'
                       .format(ifaceName, self.device))
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        else:
-            w0 = pyw.getcard(ifaceName)  # get a card
-            self.channel = pyw.chget(w0)
+        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        self.channel = pyw.chget(w0)
         return self.channel
 
     @wishful_module.bind_function(upis.wifi.net.get_info_of_connected_devices)
@@ -410,16 +388,12 @@ class WifiModule(wishful_module.AgentModule):
         return self.get_entry_of_connected_devices('TDLS peer', iface)
 
     def getHwAddr(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        w0 = pyw.getcard(ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         mac = pyw.macget(w0)
         return mac
 
     def getIfaceIpAddr(self, ifaceName):
-        if not self._check_if_my_iface(ifaceName):
-            return False  # todo : raise exception
-        w0 = pyw.getcard(ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         ip = pyw.inetget(w0)[0]
         return ip
 

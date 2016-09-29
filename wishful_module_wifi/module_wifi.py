@@ -131,6 +131,11 @@ class WifiModule(wishful_module.AgentModule):
             return False
 
         iw.add_interface(ifaceName, modeInt, None, 0)
+
+        ''' Other option:
+        pyw.devadd(mcard, ifaceName, mode)
+        '''
+
         return True
 
     @wishful_module.bind_function(upis.radio.del_interface)
@@ -187,6 +192,21 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.get_link_info)
     def get_link_info(self, ifaceName):
+        '''
+        For each link we get:
+            stat associated
+            ssid ****net
+            bssid XX:YY:ZZ:00:11:22
+            chw 20
+            int 100
+            freq 5765
+            tx {'pkts': 256, 'failed': 0, 'bytes': 22969, 'bitrate': {'rate': 6.0},
+                'retries': 31}
+            rx {'pkts': 29634, 'bitrate': {'width': 40, 'rate': 270.0,
+                'mcs-index': 14, 'gi': 0}, 'bytes': 2365454}
+            rss -50
+        '''
+
         card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
         link = pyw.link(card)
         return link
@@ -861,6 +881,15 @@ class WifiModule(wishful_module.AgentModule):
             self.log.fatal("Failed to set bitrate: %s" % str(e))
             raise exceptions.UPIFunctionExecutionFailedException(
                 func_name=inspect.currentframe().f_code.co_name, err_msg=str(e))
+
+
+    @wishful_module.bind_function(upis.wifi.get_wifi_mode)
+    def get_wifi_mode(self, iface):
+        '''
+        Get the mode of the interface: managed, monitor, ...
+        '''
+        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        return pyw.modeget(w0)
 
     #################################################
     # Helper functions

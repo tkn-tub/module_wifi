@@ -133,7 +133,13 @@ class WifiModule(wishful_module.AgentModule):
         iw.add_interface(ifaceName, modeInt, None, 0)
 
         ''' Other option:
-        pyw.devadd(mcard, ifaceName, mode)
+        w0 = pyw.getcard('wlan1‘)
+        if 'monitor' in pyw.devmodes(w0):
+            m0 = pyw.devadd(w0,'mon0','monitor’)
+
+           pyw.winterfaces()
+           pyw.up(m0) # bring the new card up to use
+           pyw.chset(m0,6,None)
         '''
 
         return True

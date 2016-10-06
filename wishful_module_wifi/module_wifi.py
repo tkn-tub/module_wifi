@@ -896,6 +896,16 @@ class WifiModule(wishful_module.AgentModule):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.modeget(w0)
 
+
+    @wishful_module.bind_function(upis.wifi.get_wifi_card_info)
+    def get_wifi_card_info(self, iface):
+        '''
+        Get info about the wifi card: vendor, driver, ...
+        '''
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
+        return pyw.ifinfo(w0)
+
+
     #################################################
     # Helper functions
     #################################################

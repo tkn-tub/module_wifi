@@ -34,7 +34,7 @@ class WifiTestController(wishful_module.ControllerModule):
             device = node.get_device(0)
             self.log.info(device)
 
-            iface = 'wlan6'
+            iface = 'mon0'
 
             curr_pwr = device.radio.get_tx_power(iface)
             self.log.info('WIFI::get_power %d' % curr_pwr)

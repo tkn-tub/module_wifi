@@ -46,13 +46,13 @@ class WifiModule(wishful_module.AgentModule):
     def my_start_function(self):
         found = False
         for card in pyw.phylist():
-            if card[1] == self.deviceObj.name:
+            if card[1] == self.device:
                 found = True
                 self.phyIndex = card[0]
                 self.phyName = card[1]
 
         if not found:
-            self.log.info("Device {} not found".format(self.deviceObj.name))
+            self.log.info("Device {} not found".format(self.device))
             # TODO: raise exception
         else:
             self.log.info("Device {} found, index: {}"
@@ -293,8 +293,7 @@ class WifiModule(wishful_module.AgentModule):
             tbd: use Netlink API
         '''
 
-        self.log.info("WIFI Module get info on associated",
-                      "clients on interface: {}".format(ifaceName))
+        self.log.info("WIFI Module get info on assoc clients on iface: %s" % str(ifaceName))
 
         try:
             [rcode, sout, serr] = self.run_command(

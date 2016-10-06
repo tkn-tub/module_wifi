@@ -888,7 +888,7 @@ class WifiModule(wishful_module.AgentModule):
                 func_name=inspect.currentframe().f_code.co_name, err_msg=str(e))
 
 
-    @wishful_module.bind_function(upis.wifi.get_wifi_mode)
+    @wishful_module.bind_function(upis.wifi.radio.get_wifi_mode)
     def get_wifi_mode(self, iface):
         '''
         Get the mode of the interface: managed, monitor, ...
@@ -897,7 +897,7 @@ class WifiModule(wishful_module.AgentModule):
         return pyw.modeget(w0)
 
 
-    @wishful_module.bind_function(upis.wifi.get_wifi_card_info)
+    @wishful_module.bind_function(upis.wifi.radio.get_wifi_card_info)
     def get_wifi_card_info(self, iface):
         '''
         Get info about the wifi card: vendor, driver, ...

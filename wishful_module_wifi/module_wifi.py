@@ -146,12 +146,12 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.del_interface)
     def del_interface(self, ifaceName):
-        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        card = self.get_wifi_chard(ifaceName)  # get a card for interface
         pyw.devdel(card)
 
     @wishful_module.bind_function(upis.radio.set_interface_up)
     def set_interface_up(self, ifaceName):
-        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        card = self.get_wifi_chard(ifaceName)  # get a card for interface
         # TODO: replace by pyric rfkill
         cmd = "rfkill unblock wifi"
         self.run_command(cmd)
@@ -160,18 +160,18 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.set_interface_down)
     def set_interface_down(self, ifaceName):
-        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        card = self.get_wifi_chard(ifaceName)  # get a card for interface
         pyw.down(card)
         return True
 
     @wishful_module.bind_function(upis.radio.is_interface_up)
     def is_interface_up(self, ifaceName):
-        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         return pyw.isup(w0)
 
     @wishful_module.bind_function(upis.radio.is_connected)
     def is_connected(self, ifaceName):
-        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        card = self.get_wifi_chard(ifaceName)  # get a card for interface
         return pyw.isconnected(card)
 
     @wishful_module.bind_function(upis.wifi.net.connect_to_network)
@@ -193,7 +193,7 @@ class WifiModule(wishful_module.AgentModule):
 
     @wishful_module.bind_function(upis.radio.disconnect)
     def disconnect(self, ifaceName):
-        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        card = self.get_wifi_chard(ifaceName)  # get a card for interface
         pyw.disconnect(card)
 
     @wishful_module.bind_function(upis.radio.get_link_info)
@@ -213,7 +213,7 @@ class WifiModule(wishful_module.AgentModule):
             rss -50
         '''
 
-        card = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        card = self.get_wifi_chard(ifaceName)  # get a card for interface
         link = pyw.link(card)
         return link
 
@@ -232,7 +232,7 @@ class WifiModule(wishful_module.AgentModule):
         self.log.info('Setting power on iface {}:{} to {}'
                       .format(ifaceName, self.device, str(power_dBm)))
         try:
-            w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+            w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
             pyw.txset(w0, 'fixed', power_dBm)
             self.power = power_dBm
         except Exception as e:
@@ -243,7 +243,7 @@ class WifiModule(wishful_module.AgentModule):
     @wishful_module.bind_function(upis.radio.get_tx_power)
     def get_tx_power(self, ifaceName):
         self.log.debug("getting power of interface: {}".format(ifaceName))
-        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         self.power = pyw.txget(w0)
         return self.power
 
@@ -253,7 +253,7 @@ class WifiModule(wishful_module.AgentModule):
         self.log.info('Setting channel for {}:{} to {}'
                       .format(ifaceName, self.device, channel))
         try:
-            w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+            w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
             # check mode
             dinfo = pyw.devinfo(w0)
             if dinfo['mode'] == 'AP':
@@ -281,7 +281,7 @@ class WifiModule(wishful_module.AgentModule):
     def get_channel(self, ifaceName):
         self.log.info('Get channel for {}:{}'
                       .format(ifaceName, self.device))
-        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         self.channel = pyw.chget(w0)
         return self.channel
 
@@ -414,12 +414,12 @@ class WifiModule(wishful_module.AgentModule):
         return self.get_entry_of_connected_devices('TDLS peer', iface)
 
     def getHwAddr(self, ifaceName):
-        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         mac = pyw.macget(w0)
         return mac
 
     def getIfaceIpAddr(self, ifaceName):
-        w0 = self.get_wifi_chard(self, ifaceName)  # get a card for interface
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         ip = pyw.inetget(w0)[0]
         return ip
 
@@ -712,7 +712,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Returns information about rf blocks (Soft Block, Hard Block)
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.isblocked(w0)
 
 
@@ -721,7 +721,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Turn off the softblock
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.unblock(w0)  # turn off the softblock
 
     @wishful_module.bind_function(upis.radio.set_mac_address)
@@ -729,7 +729,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Sets a new MAC address on wireless interface
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.macset(w0, new_mac_addr)
 
 
@@ -738,7 +738,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Sets power management
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.pwrsaveset(w0, value)
 
     @wishful_module.bind_function(upis.wifi.get_power_management)
@@ -746,7 +746,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get power management
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.pwrsaveget(w0)
 
     @wishful_module.bind_function(upis.wifi.set_retry_short)
@@ -754,7 +754,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Sets retry short
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.retryshortset(w0, value)
 
     @wishful_module.bind_function(upis.wifi.get_retry_short)
@@ -762,7 +762,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get retry short
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.retryshortget(w0)
 
 
@@ -771,7 +771,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Sets retry long
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.retrylongset(w0, value)
 
     @wishful_module.bind_function(upis.wifi.get_retry_long)
@@ -779,7 +779,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get retry long
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.retrylongget(w0)
 
 
@@ -788,7 +788,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Sets RTS threshold
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.rtsthreshset(w0, value)
 
     @wishful_module.bind_function(upis.wifi.get_rts_threshold)
@@ -796,7 +796,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get RTS threshold
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.rtsthreshget(w0)
 
     @wishful_module.bind_function(upis.wifi.set_fragmentation_threshold)
@@ -804,7 +804,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Sets framgmentation threshold
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.fragthreshset(w0, value)
 
     @wishful_module.bind_function(upis.wifi.get_fragmentation_threshold)
@@ -812,7 +812,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get framgmentation threshold
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.fragthreshget(w0)
 
     @wishful_module.bind_function(upis.wifi.get_supported_modes)
@@ -820,7 +820,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get supported WiFi modes
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pinfo = pyw.phyinfo(w0)
         return pinfo['modes']
 
@@ -829,7 +829,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get supported WiFi software modes
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pinfo = pyw.phyinfo(w0)
         return pinfo['swmodes']
 
@@ -838,7 +838,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get info about supported RF bands
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pinfo = pyw.phyinfo(w0)
         return pinfo['bands']
 
@@ -847,7 +847,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get info about supported ciphers
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         pinfo = pyw.phyinfo(w0)
         return pinfo['ciphers']
 
@@ -856,7 +856,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get info about supported WiFi standards, i.e. 802.11a/n/g/ac/b
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.devstds(w0)
 
     @wishful_module.bind_function(upis.wifi.set_modulation_rate)
@@ -894,7 +894,7 @@ class WifiModule(wishful_module.AgentModule):
         '''
         Get the mode of the interface: managed, monitor, ...
         '''
-        w0 = self.get_wifi_chard(self, iface)  # get a card for interface
+        w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.modeget(w0)
 
     #################################################

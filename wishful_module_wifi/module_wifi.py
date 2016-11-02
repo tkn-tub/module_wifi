@@ -186,7 +186,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
         return True
@@ -329,7 +329,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(
@@ -549,7 +549,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.wifi.net.remove_device_from_blacklist)
@@ -575,7 +575,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.wifi.net.add_device_to_blacklist)
@@ -600,7 +600,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(upis.wifi.net.register_new_device)
@@ -627,7 +627,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
     @wishful_module.bind_function(
@@ -884,7 +884,7 @@ class WifiModule(wishful_module.AgentModule):
 
         except Exception as e:
             self.log.fatal("Failed to set bitrate: %s" % str(e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=inspect.currentframe().f_code.co_name, err_msg=str(e))
 
 
@@ -937,7 +937,7 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailedException(
+            raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
     def run_command(self, command):

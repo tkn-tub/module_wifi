@@ -1,4 +1,5 @@
-import os, signal
+import os
+import signal
 import logging
 import subprocess
 import inspect
@@ -88,8 +89,10 @@ class WifiModule(wishful_module.AgentModule):
     def get_interface_info(self, ifaceName):
         if not self._check_if_my_iface(ifaceName):
             self.log.error('check_if_my_iface failed')
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='No such interface: ' + iface)
+            raise exceptions.FunctionExecutionFailed(
+                func_name=inspect.currentframe().f_code.co_name,
+                err_msg='No such interface: ' + iface)
+
         dinfo = pyw.devinfo(ifaceName)
         # Delete card object from dict
         dinfo.pop("card", None)
@@ -99,8 +102,10 @@ class WifiModule(wishful_module.AgentModule):
     def get_phy_info(self, ifaceName):
         if not self._check_if_my_iface(ifaceName):
             self.log.error('check_if_my_iface failed')
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='No such interface: ' + iface)
+            raise exceptions.FunctionExecutionFailed(
+                func_name=inspect.currentframe().f_code.co_name,
+                err_msg='No such interface: ' + iface)
+
         dinfo = pyw.devinfo(ifaceName)
         card = dinfo['card']
         pinfo = pyw.phyinfo(card)
@@ -206,8 +211,8 @@ class WifiModule(wishful_module.AgentModule):
             chw 20
             int 100
             freq 5765
-            tx {'pkts': 256, 'failed': 0, 'bytes': 22969, 'bitrate': {'rate': 6.0},
-                'retries': 31}
+            tx {'pkts': 256, 'failed': 0, 'bytes': 22969,
+                'bitrate': {'rate': 6.0}, 'retries': 31}
             rx {'pkts': 29634, 'bitrate': {'width': 40, 'rate': 270.0,
                 'mcs-index': 14, 'gi': 0}, 'bytes': 2365454}
             rss -50
@@ -236,8 +241,10 @@ class WifiModule(wishful_module.AgentModule):
             pyw.txset(w0, 'fixed', power_dBm)
             self.power = power_dBm
         except Exception as e:
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='Failed to set tx power: ' + str(e))
+            raise exceptions.FunctionExecutionFailed(
+                func_name=inspect.currentframe().f_code.co_name,
+                err_msg='Failed to set tx power: ' + str(e))
+
         return True
 
     @wishful_module.bind_function(upis.radio.get_tx_power)
@@ -273,8 +280,8 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             fname = inspect.currentframe().f_code.co_name
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
-            raise exceptions.UPIFunctionExecutionFailed(func_name=fname,
-                                                        err_msg=str(e))
+            raise exceptions.FunctionExecutionFailed(
+                func_name=fname, err_msg=str(e))
         return True
 
     @wishful_module.bind_function(upis.wifi.radio.get_channel)
@@ -714,7 +721,6 @@ class WifiModule(wishful_module.AgentModule):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.isblocked(w0)
 
-
     @wishful_module.bind_function(upis.wifi.rf_unblock)
     def rf_unblock(self, iface):
         '''
@@ -730,7 +736,6 @@ class WifiModule(wishful_module.AgentModule):
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.macset(w0, new_mac_addr)
-
 
     @wishful_module.bind_function(upis.wifi.set_power_management)
     def set_power_management(self, iface, value):
@@ -764,7 +769,6 @@ class WifiModule(wishful_module.AgentModule):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.retryshortget(w0)
 
-
     @wishful_module.bind_function(upis.wifi.set_retry_long)
     def set_retry_long(self, iface, value):
         '''
@@ -780,7 +784,6 @@ class WifiModule(wishful_module.AgentModule):
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.retrylongget(w0)
-
 
     @wishful_module.bind_function(upis.wifi.set_rts_threshold)
     def set_rts_threshold(self, iface, value):
@@ -859,7 +862,8 @@ class WifiModule(wishful_module.AgentModule):
         return pyw.devstds(w0)
 
     @wishful_module.bind_function(upis.wifi.set_modulation_rate)
-    def set_modulation_rate(self, ifaceName, is5Ghzband, isLegacy, rate_Mbps_or_ht_mcs):
+    def set_modulation_rate(self, ifaceName, is5Ghzband,
+                            isLegacy, rate_Mbps_or_ht_mcs):
         '''
         Sets a fix PHY modulation rate:
         - legacy: bitrate
@@ -885,8 +889,8 @@ class WifiModule(wishful_module.AgentModule):
         except Exception as e:
             self.log.fatal("Failed to set bitrate: %s" % str(e))
             raise exceptions.FunctionExecutionFailedException(
-                func_name=inspect.currentframe().f_code.co_name, err_msg=str(e))
-
+                func_name=inspect.currentframe().f_code.co_name,
+                err_msg=str(e))
 
     @wishful_module.bind_function(upis.wifi.radio.get_wifi_mode)
     def get_wifi_mode(self, iface):
@@ -896,7 +900,6 @@ class WifiModule(wishful_module.AgentModule):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.modeget(w0)
 
-
     @wishful_module.bind_function(upis.wifi.radio.get_wifi_card_info)
     def get_wifi_card_info(self, iface):
         '''
@@ -904,7 +907,6 @@ class WifiModule(wishful_module.AgentModule):
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.ifinfo(w0)
-
 
     #################################################
     # Helper functions
@@ -917,8 +919,10 @@ class WifiModule(wishful_module.AgentModule):
 
         if not self._check_if_my_iface(iface):
             self.log.error('check_if_my_iface failed')
-            raise exceptions.UPIFunctionExecutionFailed(func_name=inspect.currentframe().f_code.co_name,
-                                                        err_msg='No such interface: ' + iface)
+            raise exceptions.FunctionExecutionFailed(
+                func_name=inspect.currentframe().f_code.co_name,
+                err_msg='No such interface: ' + iface)
+
         return pyw.getcard(iface)  # get a card for interface
 
     def get_entry_of_connected_devices(self, key, iface):

@@ -1,11 +1,8 @@
 import logging
 import datetime
 import time
-import random
 from random import randint
-import wishful_upis as upis
-from wishful_agent.core import wishful_module
-from wishful_agent.timer import TimerEventSender
+from uniflex.core import modules
 
 __author__ = "Anatolij Zubow"
 __copyright__ = "Copyright (c) 2016, Technische Universität Berlin"
@@ -15,16 +12,17 @@ __email__ = "{zubow}@tkn.tu-berlin.de"
 '''
 Local test of WiFi component.
 
-sudo ../../../dev/bin/wishful-agent --config config_local.yaml
+sudo ../../../dev/bin/uniflex-agent --config config_local.yaml
 '''
 
-@wishful_module.build_module
-class WifiTestController(wishful_module.ControllerModule):
+
+@modules.build_module
+class WifiTestController(modules.ControllerModule):
     def __init__(self):
         super(WifiTestController, self).__init__()
         self.log = logging.getLogger('WifiTestController')
 
-    @wishful_module.on_start()
+    @modules.on_start()
     def my_start_function(self):
         self.log.info("start wifi test")
 
@@ -45,7 +43,7 @@ class WifiTestController(wishful_module.ControllerModule):
             curr_pwr = device.radio.get_tx_power(iface)
             self.log.info('WIFI::get_power %d' % curr_pwr)
 
-            new_pwr = randint(1,17)
+            new_pwr = randint(1, 17)
             self.log.info('WIFI::set_power to %d' % new_pwr)
             curr_pwr = device.radio.set_tx_power(new_pwr, iface)
 
@@ -59,7 +57,6 @@ class WifiTestController(wishful_module.ControllerModule):
 
         self.log.info('... done')
 
-    @wishful_module.on_exit()
+    @modules.on_exit()
     def my_stop_function(self):
         self.log.info("stop wifi test")
-

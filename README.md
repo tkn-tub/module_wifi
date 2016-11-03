@@ -1,9 +1,7 @@
-WiSHFUL WiFI Module
+UniFlex WiFI Module
 ============================
 
-This is a prototypic implementation of a wireless agent providing the Unified
-Programming Interfaces (UPIs) of the Wishful software platform for
-radio and network control.
+Device Module for WiFi 
 
 ## Acknowledgement
 

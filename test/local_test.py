@@ -16,8 +16,7 @@ sudo ../../../dev/bin/uniflex-agent --config config_local.yaml
 '''
 
 
-@modules.build_module
-class WifiTestController(modules.ControllerModule):
+class WifiTestController(modules.ControlApplication):
     def __init__(self):
         super(WifiTestController, self).__init__()
         self.log = logging.getLogger('WifiTestController')
@@ -53,7 +52,8 @@ class WifiTestController(modules.ControllerModule):
             self.log.info('WIFI::get_power %d' % curr_pwr)
 
         except Exception as e:
-            self.log.error("{} Failed, err_msg: {}".format(datetime.datetime.now(), e))
+            self.log.error("{} Failed, err_msg: {}"
+                           .format(datetime.datetime.now(), e))
 
         self.log.info('... done')
 

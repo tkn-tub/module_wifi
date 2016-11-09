@@ -32,8 +32,7 @@ __version__ = "0.1.0"
 __email__ = "{gawlowicz, zubow}@tkn.tu-berlin.de"
 
 
-@modules.build_module
-class WifiModule(modules.AgentModule):
+class WifiModule(modules.DeviceModule):
     def __init__(self):
         super(WifiModule, self).__init__()
         self.log = logging.getLogger('WifiModule')

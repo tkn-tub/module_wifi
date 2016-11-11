@@ -31,24 +31,24 @@ class WifiTestController(modules.ControlApplication):
             device = node.get_device(0)
             self.log.info(device)
 
-            iface = 'wlan0'
+            iface = 'wlp3s0'
 
-            cinfo = device.radio.get_wifi_card_info(iface)
-            self.log.info('WIFI::get_card_info %s' % cinfo)
+            cinfo = device.get_info(iface)
+            self.log.info('WIFI::get_info %s' % cinfo)
 
-            wi_mode = device.radio.get_wifi_mode(iface)
+            wi_mode = device.get_wifi_mode(iface)
             self.log.info('WIFI::get_wifi_mode %s' % wi_mode)
 
-            curr_pwr = device.radio.get_tx_power(iface)
+            curr_pwr = device.get_tx_power(iface)
             self.log.info('WIFI::get_power %d' % curr_pwr)
 
             new_pwr = randint(1, 17)
             self.log.info('WIFI::set_power to %d' % new_pwr)
-            curr_pwr = device.radio.set_tx_power(new_pwr, iface)
+            curr_pwr = device.set_tx_power(new_pwr, iface)
 
             time.sleep(0.5)
 
-            curr_pwr = device.radio.get_tx_power(iface)
+            curr_pwr = device.get_tx_power(iface)
             self.log.info('WIFI::get_power %d' % curr_pwr)
 
         except Exception as e:

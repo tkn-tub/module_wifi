@@ -54,13 +54,16 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         if not found:
             self.log.info("Device {} not found".format(self.device))
-            # TODO: raise exception
+            raise exceptions.UniFlexException(msg='Device not found')
+
         else:
             self.log.info("Device {} found, index: {}"
                           .format(self.phyName, self.phyIndex))
 
         cmd = "rfkill unblock wifi"
         self.run_command(cmd)
+
+    ''' Helper '''
 
     def _get_my_ifaces(self):
         myWInterfaces = []
@@ -80,35 +83,40 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return False
 
+    ''' API '''
+
     def get_interfaces(self):
         ifaces = self._get_my_ifaces()
         return ifaces
+
 
     def get_interface_info(self, ifaceName):
         if not self._check_if_my_iface(ifaceName):
             self.log.error('check_if_my_iface failed')
             raise exceptions.FunctionExecutionFailed(
                 func_name=inspect.currentframe().f_code.co_name,
-                err_msg='No such interface: ' + iface)
+                err_msg='No such interface: ' + ifaceName)
 
         dinfo = pyw.devinfo(ifaceName)
         # Delete card object from dict
         dinfo.pop("card", None)
         return dinfo
 
+
     def get_phy_info(self, ifaceName):
         if not self._check_if_my_iface(ifaceName):
             self.log.error('check_if_my_iface failed')
             raise exceptions.FunctionExecutionFailed(
                 func_name=inspect.currentframe().f_code.co_name,
-                err_msg='No such interface: ' + iface)
+                err_msg='No such interface: ' + ifaceName)
 
         dinfo = pyw.devinfo(ifaceName)
         card = dinfo['card']
         pinfo = pyw.phyinfo(card)
         return pinfo
 
-    def add_interface(self, ifaceName, mode):
+
+    def add_interface(self, ifaceName, mode, **kwargs):
         if ifaceName in pyw.winterfaces():
             return False
 
@@ -145,9 +153,11 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return True
 
+
     def del_interface(self, ifaceName):
         card = self.get_wifi_chard(ifaceName)  # get a card for interface
         pyw.devdel(card)
+
 
     def set_interface_up(self, ifaceName):
         card = self.get_wifi_chard(ifaceName)  # get a card for interface
@@ -157,18 +167,22 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         pyw.up(card)
         return pyw.isup(card)
 
+
     def set_interface_down(self, ifaceName):
         card = self.get_wifi_chard(ifaceName)  # get a card for interface
         pyw.down(card)
         return True
 
+
     def is_interface_up(self, ifaceName):
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         return pyw.isup(w0)
 
+
     def is_connected(self, ifaceName):
         card = self.get_wifi_chard(ifaceName)  # get a card for interface
         return pyw.isconnected(card)
+
 
     def connect_to_network(self, iface, ssid):
         self.log.info('Connecting via to AP with SSID: %s->%s' %
@@ -186,9 +200,11 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return True
 
+
     def disconnect(self, ifaceName):
         card = self.get_wifi_chard(ifaceName)  # get a card for interface
         pyw.disconnect(card)
+
 
     def get_link_info(self, ifaceName):
         '''
@@ -210,6 +226,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         link = pyw.link(card)
         return link
 
+
     def scan_networks(self, ifaceName):
         try:
             # TODO: replace with pyric
@@ -220,7 +237,16 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             self.log.fatal("An error occurred in Dot80211Linux: %s" % e)
             raise Exception("An error occurred in Dot80211Linux: %s" % e)
 
+    ''' TX power control '''
+
     def set_tx_power(self, power_dBm, ifaceName):
+        """
+        Sets TX power for that interface
+        :param power_dBm: the power in dBm
+        :param ifaceName: name of interface
+        :return: True in case it was successful
+        """
+
         self.log.info('Setting power on iface {}:{} to {}'
                       .format(ifaceName, self.device, str(power_dBm)))
         try:
@@ -234,13 +260,29 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return True
 
+
     def get_tx_power(self, ifaceName):
+        """
+        Gets the TX power used by this interface
+        :param ifaceName: name of the interface
+        :return: power in dBm
+        """
+
         self.log.debug("getting power of interface: {}".format(ifaceName))
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         self.power = pyw.txget(w0)
         return self.power
 
-    def set_channel(self, channel, ifaceName):
+    ''' Rf channel assignment '''
+
+    def set_channel(self, channel, ifaceName, **kwargs):
+        """
+        Set the Rf channel
+        :param channel: the new channel, i.e. channel number according to IEEE 802.11 spec
+        :param ifaceName: name of the interface
+        :param kwargs: optional args, i.e. path to control socket
+        :return: True in case it was successful
+        """
 
         self.log.info('Setting channel for {}:{} to {}'
                       .format(ifaceName, self.device, channel))
@@ -249,10 +291,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             # check mode
             dinfo = pyw.devinfo(w0)
             if dinfo['mode'] == 'AP':
-                # give new chanel to hostapd
+                if not "control_socket_path" in kwargs:
+                    self.log.warn('Please pass the path to hostapd control socket')
+                    return False
+
+                # pass new chanel to hostapd
                 # hostapd requires frequency not channel
                 freq = ch2rf(channel)
-                control_socket_path = "xxx"
+                control_socket_path = kwargs["control_socket_path"]
                 beacon_periods = 5
                 cmd = ('sudo hostapd_cli -p {} chan_switch {} {}'
                        .format(control_socket_path, beacon_periods, freq))
@@ -269,12 +315,21 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
                 func_name=fname, err_msg=str(e))
         return True
 
-    def get_channel(self, ifaceName):
+
+    def get_channel(self, ifaceName, **kwargs):
+        """
+        Get the current used Rf channel number according to IEEE 802.11 spec
+        :param ifaceName: name of interface
+        :param kwargs: optional arg
+        :return: the channel number
+        """
+
         self.log.info('Get channel for {}:{}'
                       .format(ifaceName, self.device))
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         self.channel = pyw.chget(w0)
         return self.channel
+
 
     def get_info_of_connected_devices(self, ifaceName):
         '''
@@ -322,63 +377,82 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
+
     def get_inactivity_time_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('inactive time', iface)
+
 
     def get_avg_sigpower_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('signal avg', iface)
 
+
     def get_sigpower_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('signal', iface)
+
 
     def get_tx_retries_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('tx retries', iface)
 
+
     def get_tx_packets_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('tx packets', iface)
+
 
     def get_tx_failed_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('tx failed', iface)
 
+
     def get_tx_bytes_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('tx bytes', iface)
+
 
     def get_tx_bitrate_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('tx bitrate', iface)
 
+
     def get_rx_bytes_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('rx bytes', iface)
+
 
     def get_rx_packets_of_connected_devices(self, iface):
         return self.get_entry_of_connected_devices('rx packets', iface)
 
+
     def get_authorized_connected_device(self, iface):
         return self.get_entry_of_connected_devices('authorized', iface)
+
 
     def get_authenticated_connected_device(self, iface):
         return self.get_entry_of_connected_devices('authenticated', iface)
 
+
     def get_used_preamble_connected_device(self, iface):
         return self.get_entry_of_connected_devices('preamble', iface)
+
 
     def get_mfp_connected_device(self, iface):
         return self.get_entry_of_connected_devices('MFP', iface)
 
+
     def get_wmm_wme_connected_device(self, iface):
         return self.get_entry_of_connected_devices('WMM/WME', iface)
 
+
     def get_tdls_peer_connected_device(self, iface):
         return self.get_entry_of_connected_devices('TDLS peer', iface)
+
 
     def getHwAddr(self, ifaceName):
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         mac = pyw.macget(w0)
         return mac
 
+
     def getIfaceIpAddr(self, ifaceName):
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         ip = pyw.inetget(w0)[0]
         return ip
+
 
     def gen_layer2_traffic(self, iface, num_packets,
                            pkt_interval, max_phy_broadcast_rate_mbps,
@@ -446,6 +520,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
             return tx_frame_rate
 
+
     def sniff_layer2_traffic(self, iface, sniff_timeout, **kwargs):
 
         self.log.info('sniff layer 2 traffic ... here 802.11')
@@ -468,6 +543,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         self.log.info('sniff80211L2LinkProbing(): rxpackets= %d' % numRxPkts)
         return numRxPkts
 
+
     def inject_frame(self, iface, frame, is_layer_2_packet,
                      tx_count=1, pkt_interval=1):
         self.log.debug("Inject frame".format())
@@ -481,6 +557,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return True
 
+
     def disconnect_device(self, iface, sta_mac_addr):
         """
         Send a disaccociation request frame
@@ -488,8 +565,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         tbd: what is -p ?? Please simplify
         """
 
-        exec_file = str(os.path.join(
-            self.getPlatformPathHandover())) + '/hostapd_cli'
+        exec_file = 'sudo hostapd_cli'
         args = '-p /tmp/hostapd-' + iface + ' disassociate'
 
         command = exec_file + ' ' + args + ' ' + sta_mac_addr
@@ -506,6 +582,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
+
     def remove_device_from_blacklist(self, iface, sta_mac_addr):
         """
         Unblacklist a given STA in the AP,
@@ -513,8 +590,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         tbd: what is -p ?? Please simplify
         """
 
-        exec_file = str(os.path.join(
-            self.getPlatformPathHandover())) + '/hostapd_cli'
+        exec_file = 'sudo hostapd_cli'
         args = '-p /tmp/hostapd-' + iface + ' unblacklist_sta'
 
         command = exec_file + ' ' + args + ' ' + sta_mac_addr
@@ -531,6 +607,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
+
     def add_device_to_blacklist(self, iface, sta_mac_addr):
         """
         Blacklist a given STA in the AP, i.e. any request
@@ -538,8 +615,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         tbd: what is -p ?? Please simplify
         """
 
-        exec_file = str(os.path.join(
-            self.getPlatformPathHandover())) + '/hostapd_cli'
+        exec_file = 'sudo hostapd_cli'
         args = '-p /tmp/hostapd-' + iface + ' blacklist_sta'
 
         command = exec_file + ' ' + args + ' ' + sta_mac_addr
@@ -555,6 +631,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
 
+
     def register_new_device(self, iface, sta_mac_addr):
         """
         Register a new STA within the AP,
@@ -564,8 +641,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         self.log.debug('Add new STA %s on iface %s' % (sta_mac_addr, iface))
 
-        exec_file = str(os.path.join(
-            self.getPlatformPathHandover())) + '/hostapd_cli'
+        exec_file = 'sudo hostapd_cli'
 
         self.log.debug('exec path: %s' % exec_file)
 
@@ -580,6 +656,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
+
 
     def trigger_channel_switch_in_device(self, iface, sta_mac_addr,
                                          target_channel, serving_channel,
@@ -618,11 +695,13 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             sendp(beacon, iface=iface)
         return True
 
+
     def send_rssi_event(self, ta, rssi):
         self.log.debug("RSSI sample: TA: {}, value: {}"
                        .format(ta, rssi))
         sampleEvent = RssiSampleEvent(ta=ta, rssi=rssi)
         self.send_event(sampleEvent)
+
 
     def rssi_service_start(self):
         self._rssiServiceRunning = True
@@ -636,8 +715,10 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         self.rssiSink = RssiSink(callback=self.send_rssi_event)
         self.packetSniffer.add_sink(self.rssiSink)
 
+
     def rssi_service_stop(self):
         self._rssiServiceRunning = False
+
 
     def get_regulatory_domain(self):
         '''
@@ -645,11 +726,13 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         '''
         return pyw.regget()
 
+
     def set_regulatory_domain(self, new_domain):
         '''
         Sets the regulatory domain
         '''
         return pyw.regset(new_domain)
+
 
     def is_rf_blocked(self, iface):
         '''
@@ -658,12 +741,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.isblocked(w0)
 
+
     def rf_unblock(self, iface):
         '''
         Turn off the softblock
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.unblock(w0)  # turn off the softblock
+
 
     def set_mac_address(self, iface, new_mac_addr):
         '''
@@ -672,12 +757,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.macset(w0, new_mac_addr)
 
+
     def set_power_management(self, iface, value):
         '''
         Sets power management
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.pwrsaveset(w0, value)
+
 
     def get_power_management(self, iface):
         '''
@@ -686,12 +773,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.pwrsaveget(w0)
 
+
     def set_retry_short(self, iface, value):
         '''
         Sets retry short
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.retryshortset(w0, value)
+
 
     def get_retry_short(self, iface):
         '''
@@ -700,12 +789,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.retryshortget(w0)
 
+
     def set_retry_long(self, iface, value):
         '''
         Sets retry long
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.retrylongset(w0, value)
+
 
     def get_retry_long(self, iface):
         '''
@@ -714,12 +805,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.retrylongget(w0)
 
+
     def set_rts_threshold(self, iface, value):
         '''
         Sets RTS threshold
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.rtsthreshset(w0, value)
+
 
     def get_rts_threshold(self, iface):
         '''
@@ -728,6 +821,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.rtsthreshget(w0)
 
+
     def set_fragmentation_threshold(self, iface, value):
         '''
         Sets framgmentation threshold
@@ -735,12 +829,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pyw.fragthreshset(w0, value)
 
+
     def get_fragmentation_threshold(self, iface):
         '''
         Get framgmentation threshold
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.fragthreshget(w0)
+
 
     def get_supported_modes(self, iface):
         '''
@@ -750,6 +846,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         pinfo = pyw.phyinfo(w0)
         return pinfo['modes']
 
+
     def get_supported_swmodes(self, iface):
         '''
         Get supported WiFi software modes
@@ -757,6 +854,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         pinfo = pyw.phyinfo(w0)
         return pinfo['swmodes']
+
 
     def get_rf_band_info(self, iface):
         '''
@@ -766,6 +864,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         pinfo = pyw.phyinfo(w0)
         return pinfo['bands']
 
+
     def get_ciphers(self, iface):
         '''
         Get info about supported ciphers
@@ -774,12 +873,14 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         pinfo = pyw.phyinfo(w0)
         return pinfo['ciphers']
 
+
     def get_supported_wifi_standards(self, iface):
         '''
         Get info about supported WiFi standards, i.e. 802.11a/n/g/ac/b
         '''
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.devstds(w0)
+
 
     def set_modulation_rate(self, ifaceName, is5Ghzband,
                             isLegacy, rate_Mbps_or_ht_mcs):
@@ -811,6 +912,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
                 func_name=inspect.currentframe().f_code.co_name,
                 err_msg=str(e))
 
+
     def get_wifi_mode(self, iface):
         '''
         Get the mode of the interface: managed, monitor, ...
@@ -818,7 +920,8 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(iface)  # get a card for interface
         return pyw.modeget(w0)
 
-    def get_info(self, iface):
+
+    def get_info(self, iface=None):
         '''
         Get info about the wifi card: vendor, driver, ...
         '''
@@ -842,6 +945,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return pyw.getcard(iface)  # get a card for interface
 
+
     def get_entry_of_connected_devices(self, key, iface):
 
         try:
@@ -860,6 +964,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
             self.log.fatal("An error occurred in %s: %s" % (fname, e))
             raise exceptions.FunctionExecutionFailedException(
                 func_name=fname, err_msg=str(e))
+
 
     def run_command(self, command):
         '''
@@ -884,18 +989,19 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
         return [sp.returncode, out.decode("utf-8"), err.decode("utf-8")]
 
+
     def run_timeout_command(self, command, timeout):
         """
             Call shell-command and either return its output or kill it
             if it doesn't normally exit within timeout seconds and return None
         """
         cmd = command.split(" ")
-        start = datetime.datetime.now()
+        start = datetime.now()
         process = subprocess.Popen(
             cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         while process.poll() is None:
             time.sleep(0.1)
-            now = datetime.datetime.now()
+            now = datetime.now()
             if (now - start).seconds > timeout:
                 os.kill(process.pid, signal.SIGKILL)
                 os.waitpid(-1, os.WNOHANG)

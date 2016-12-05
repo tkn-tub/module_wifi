@@ -53,7 +53,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
                 self.phyName = card[1]
 
         if not found:
-            self.log.info("Device {} not found".format(self.device))
+            self.log.error("Device {} not found".format(self.device))
             raise exceptions.UniFlexException(msg='Device not found')
 
         else:

@@ -17,5 +17,5 @@ setup(
     description='UniFlex WIFI Module',
     long_description='UniFlex WIFI Module',
     keywords='wireless control',
-    install_requires=['pyric', 'pyshark']
+    install_requires=['pyric', 'pyshark', 'scapy>=2.4.0rc4']
 )

@@ -14,13 +14,13 @@ from pyric.utils.channels import ch2rf  # rf to channel conversion
 from pyroute2 import IW
 
 from .packet_sniffer import PacketSnifferPyShark, RssiSink
-from scapy.all import *
+from scapy3k.all import *
 
 # this is just for Pycharm; do not remove
-from scapy.layers.dot11 import Dot11
-from scapy.layers.dot11 import RadioTap
-from scapy.layers.inet import IP
-from scapy.layers.l2 import LLC, SNAP
+from scapy3k.layers.dot11 import Dot11
+from scapy3k.layers.dot11 import RadioTap
+from scapy3k.layers.inet import IP
+from scapy3k.layers.l2 import LLC, SNAP
 
 from sbi.wifi.net_device import WiFiNetDevice
 from sbi.wifi.events import RssiSampleEvent

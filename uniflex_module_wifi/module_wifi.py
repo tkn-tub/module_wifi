@@ -37,6 +37,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
     def __init__(self):
         super(WifiModule, self).__init__()
         self.log = logging.getLogger('WifiModule')
+        self.log.info("This is SimpleModule4 with UUID: " + self.uuid)
         self.phyName = None
         self.phyIndex = None
         self.channel = None

@@ -330,6 +330,20 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         self.channel = pyw.chget(w0)
         return self.channel
+    
+    def get_channel_width(self, ifaceName, **kwargs):
+        """
+        Get the current used Rf channel number according to IEEE 802.11 spec
+        :param ifaceName: name of interface
+        :param kwargs: optional arg
+        :return: the channel number
+        """
+
+        self.log.info('Get channel for {}:{}'
+                      .format(ifaceName, self.device))
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
+        self.channel = pyw.devinfo(w0)
+        return self.channel['CHW']
 
 
     def get_info_of_connected_devices(self, ifaceName):

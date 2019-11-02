@@ -37,6 +37,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
     def __init__(self):
         super(WifiModule, self).__init__()
         self.log = logging.getLogger('WifiModule')
+        self.log.info("This is SimpleModule4 with UUID: " + self.uuid)
         self.phyName = None
         self.phyIndex = None
         self.channel = None
@@ -275,12 +276,13 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
 
     ''' Rf channel assignment '''
 
-    def set_channel(self, channel, ifaceName, **kwargs):
+    def set_channel(self, channel, ifaceName, chw=None, **kwargs):
         """
         Set the Rf channel
         :param channel: the new channel, i.e. channel number according to IEEE 802.11 spec
         :param ifaceName: name of the interface
-        :param kwargs: optional args, i.e. path to control socket
+        :param chw: bandwidth of the channel
+        :param kwargs: optional args, i.e. path to control socket, 
         :return: True in case it was successful
         """
 
@@ -305,7 +307,7 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
                 self.run_command(cmd)
             else:
                 # chw: channel width oneof {None|'HT20'|'HT40-'|'HT40+'}
-                chw = None
+                # chw = None
                 pyw.chset(w0, channel, chw)
                 self.channel = channel
         except Exception as e:
@@ -329,6 +331,20 @@ class WifiModule(modules.DeviceModule, WiFiNetDevice):
         w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
         self.channel = pyw.chget(w0)
         return self.channel
+    
+    def get_channel_width(self, ifaceName, **kwargs):
+        """
+        Get the current used Rf channel width according to IEEE 802.11 spec
+        :param ifaceName: name of interface
+        :param kwargs: optional arg
+        :return: the channel width
+        """
+
+        self.log.info('Get channel for {}:{}'
+                      .format(ifaceName, self.device))
+        w0 = self.get_wifi_chard(ifaceName)  # get a card for interface
+        self.channel = pyw.devinfo(w0)
+        return self.channel['CHW']
 
 
     def get_info_of_connected_devices(self, ifaceName):
